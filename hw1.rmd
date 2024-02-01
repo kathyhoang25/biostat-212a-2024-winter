@@ -1,0 +1,254 @@
+---
+title: "Biostat 212a Homework 1"
+subtitle: "Due Jan 23, 2024 @ 11:59PM"
+author: "YOUR NAME and UID"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+
+
+header-includes:
+- \usepackage{amsthm}
+format:
+  html:
+    theme: cosmo
+    embed-resources: true
+    number-sections: true
+    toc: true
+    toc-depth: 4
+    toc-location: left
+    code-fold: false
+engine: knitr
+knitr:
+  opts_chunk: 
+    fig.align: 'center'
+    # fig.width: 6
+    # fig.height: 4
+    message: FALSE
+    cache: false
+---
+
+## Filling gaps in lecture notes (10pts)
+
+Consider the regression model
+$$
+Y = f(X) + \epsilon,
+$$
+where $\operatorname{E}(\epsilon) = 0$. 
+
+### Optimal regression function
+
+Show that the choice
+$$
+f_{\text{opt}}(X) = \operatorname{E}(Y | X)
+$$
+minimizes the mean squared prediction error
+$$
+\operatorname{E}\{[Y - f(X)]^2\},
+$$
+where the expectations averages over variations in both $X$ and $Y$. (Hint: condition on $X$.)
+
+#### Optimal Regression Function ANSWER 
+
+
+$$
+\begin{align*}
+& \operatorname{E}\{[Y - f(X)]^2\} = 
+\operatorname{E}\{\underbrace{(Y- \operatorname{E}(Y | X)}_\text{a} + \underbrace{\operatorname{E}(Y | X) - f(X)}_\text{b})^2\} \\
+& \text{Recall } (a+b)^2 = a^2 + 2ab + b^2 \\
+&= \operatorname{E}[(Y-\operatorname{E}(Y | X))^2] 
++ 2\underbrace{\operatorname{E}[(Y-\operatorname{E}(Y | X))] \operatorname{E}[(\operatorname{E}(Y | X)- f(X))}_\text{zero in on this below}
++ \operatorname{E}[(\operatorname{E}(Y | X)- f(X))^2] 
+\\
+\text{by the law of iterated expectations } \operatorname{E}[X]&= \operatorname{E}[\operatorname{E}[Y | X] \\
+&= \operatorname{E}[\operatorname{E}[Y-\operatorname{E}(Y | X)] [\operatorname{E}(Y | X) - f(X) | X] \\
+&= \operatorname{E}[\underbrace{(\operatorname{E}[(Y|X)-\operatorname{E}(Y | X))}_\text{0} (\operatorname{E}(Y | X) - f(X))] \\
+&= 0 \\
+
+\\
+\operatorname{E}\{[Y - f(X)]^2\} &= \underbrace{\operatorname{E}([Y - \operatorname{E}[(Y|X)]^2)}_\text{greater or equal to 0} + \underbrace{\operatorname{E}[\operatorname{E}(Y|X) - f(X)]^2}_\text{greater or equal to 0} \\
+\operatorname{E}(Y | X) - f(X) &= 0 \\
+f(x) &= \operatorname{E}(Y | X) \\
+& \text{Recall } \underbrace{(a-b)^2}_\text{greater or equal to 0} +  \underbrace{(c-d)^2}_\text{minimized when c = d} = 0 \\
+
+& \text{Thus, } 
+
+f_{\text{opt}}(X) = \operatorname{E}(Y | X) \text{ minimizes } \operatorname{E}\{[Y - f(X)]^2\}.  \\
+
+\end{align*}
+$$
+
+### Bias-variance trade-off
+
+Given an estimate $\hat f$ of $f$, show that the test error at a $x_0$ can be decomposed as
+$$
+\operatorname{E}\{[y_0 - \hat f(x_0)]^2\} = \underbrace{\operatorname{Var}(\hat f(x_0)) + [\operatorname{Bias}(\hat f(x_0))]^2}_{\text{MSE of } \hat f(x_0) \text{ for estimating } f(x_0)} + \underbrace{\operatorname{Var}(\epsilon)}_{\text{irreducible}},
+$$
+where the expectation averages over the variability in $y_0$ and $\hat f$.
+
+#### Bias-Variance Trade-off Answer 
+
+$$
+\text{Given that} \:
+Y = f(X) + \epsilon \
+\text{and} \
+\operatorname{E}(\epsilon) = 0 
+\text{,}
+\\ \text{we can decompose the expected mean squared test error at } X_{0} 
+\text{ into irreducible (1) and reducible error (2). }
+\\
+$$
+$$
+\begin{align*}
+
+\operatorname{E}\{[y_0 - \hat f(x_0)]^2\} 
+&= \operatorname{E}\{[y_0 - f(x_0) + f(x_0) - \hat f(x_0)]^2\}
+
+\\ &= \operatorname{E}\{[y_0 - f(x_0)]^2\} +
+\operatorname{E}\{[ f(x_0) - \hat f(x_0)]^2\} -
+2\operatorname{E}\{[(f(x_0) - \hat f(x_0))(y_0 -  f(x_0))]\} \\
+
+& \text{Recall } (a-b)^2 = a^2 - 2ab + b^2 \\
+a^2 &= \operatorname{E}\{[y_0 - f(x_0)]^2\} \\
+b^2 &= \operatorname{E}\{[ f(x_0) - \hat f(x_0)]^2\} \\
+2ab &= 2\operatorname{E}\{[(f(x_0) - \hat f(x_0))(y_0 -  f(x_0))]\} \\
+&= 2\operatorname{E}\{[f(x_0)(y_0)-f(x_0)^2- \hat f(x_0)(y_0) + f(x_0) \hat f(x_0)]\}\\
+&= 2(f(x_0)^2-f(x_0)^2-f(x_0)\operatorname{E}\{[\hat f(x_0)]\}+f(x_0)\operatorname{E}\{[\hat f(x_0)]\}) \\
+&= 2(0) \\
+&=0 \\
+
+
+\\ &= \operatorname{E}\{[y_0 - f(x_0)]^2\} +
+\operatorname{E}\{[ f(x_0) - \hat f(x_0)]^2\} \\
+
+& \text{For simplicity and clarity, I will break these terms up to solve individually and combine them in the end.}
+\end{align*}
+$$
+$$
+\begin{align*}
+& \text{(1) reducible error} \\
+\operatorname{E}\{[y_0 - \hat f(x_0)]^2\} &= 
+\operatorname{E}\{[\hat f(x_0) + \epsilon - \hat f(x_0)]^2\} \text{ sub in } \hat f(x_0) + \epsilon \text{ for } y_0 \\
+&= \operatorname{E}(\epsilon^2) -  \operatorname{E}(\epsilon)^2 + \operatorname{E}(\epsilon)^2 \\ &= E[\epsilon^2] - E[\epsilon]^2 + 0 \\
+&= \operatorname{Var}(\epsilon)
+\end{align*}
+$$
+$$
+\begin{align*}
+& \text{(2) irreducible error} \\
+
+\operatorname{E}\{[ f(x_0) - \hat f(x_0)]^2\}
+&= \operatorname{E}\{[f(x_0) + {E}[\hat f(x_0)] - {E}[\hat f(x_0) ] - \hat f(x_0)]^2]\} \\
+&= \operatorname{E}\{[f(x_0) + {E}[\hat f(x_0)]]^2\} 
+- 2\operatorname{E}\{[ (f(x_0) + E[\hat f(x_0)]) * (E[\hat f(x_0) ] - \hat f(x_0)])]\}
++ \operatorname{E}\{[\hat f(x_0) + {E}[\hat f(x_0)]^2]\} \\
+
+& \text{Recall } (a-b)^2 = a^2 - 2ab + b^2 \text{, we will zero in on the latter part b in 2ab}. \\
+& 2\operatorname{E}\{[ (f(x_0) + E[\hat f(x_0)]) * (E[\hat f(x_0) ] - \hat f(x_0)])]\} \\
+& \operatorname{E}\{[\hat f(x_0) - {E}\{[(\hat f(x_0))]\} \\
+&= E[\hat f(x_0)] - E[\hat f(x_0)] \text{    because the expected value of an expected value is just itself} \\
+&= 0 \\
+
+& \text{Thus, we are left with } \\
+
+&= \operatorname{E}\{[f(x_0) + {E}[\hat f(x_0)]]^2\} 
++ \operatorname{E}\{[\hat f(x_0) + {E}[\hat f(x_0)]^2]\} \\
+&= \operatorname{Var}(\hat f(x_0))  + [\operatorname{Bias}(\hat f(x_0))]^2
+\end{align*}
+$$
+$$
+\begin{align*}
+& \text{Combining (1) reducible error and (2) irreducible error we get a bias-variance decomposition of} \\
+&= \operatorname{Var}(\hat f(x_0)) + [\operatorname{Bias}(\hat f(x_0))]^2 + \operatorname{Var}(\epsilon)
+
+\end{align*}
+$$
+
+## ISL Exercise 2.4.3 (10pts)
+
+```{r, eval = F}
+library(tidyverse)
+fit <- lm(sales ~ TV, data = )
+```
+
+## ISL Exercise 2.4.4 (10pts)
+
+
+
+## ISL Exercise 2.4.10 (30pts)
+
+Your can read in the `boston` data set directly from url <https://raw.githubusercontent.com/ucla-biostat-212a/2024winter/master/slides/data/Boston.csv>. A documentation of the `boston` data set is [here](https://www.rdocumentation.org/packages/ISLR2/versions/1.3-2/topics/Boston).
+
+::: {.panel-tabset}
+
+#### R
+
+```{r, evalue = F}
+library(tidyverse)
+
+Boston <- read_csv("https://raw.githubusercontent.com/ucla-biostat-212a/2024winter/master/slides/data/Boston.csv", col_select = -1) %>% 
+  print(width = Inf)
+```
+
+#### Python
+
+```{python}
+import pandas as pd
+import io
+import requests
+
+url = "https://raw.githubusercontent.com/ucla-econ-425t/2023winter/master/slides/data/Boston.csv"
+s = requests.get(url).content
+Boston = pd.read_csv(io.StringIO(s.decode('utf-8')), index_col = 0)
+Boston
+```
+:::
+
+```{r part a load dataset}
+# install.packages("ISLR2")
+library(ISLR2)
+library(GGally)
+Boston
+?Boston
+dim(Boston)
+```
+
+##### a. Boston Dataset Dimensions
+There are 506 rows and 13 columns in the Boston data set. The rows represent the 506 suburbs in Boston and their housing values. Each row corresponds to one suburb in Boston and the predictor variables for that suburb. Each column represents a different predictor variable for the housing values (Ex. crim= per capita crime rate by town, zn = proportion of residential land zoned for lots over 25,000 sq.ft, etc).
+
+More information about the Boston data set can be found from this source: https://rdrr.io/cran/ISLR2/man/Boston.html
+
+##### b. Pairwise Scatterplots
+```{r part b scatterplots, evalue = T}
+Boston %>% ggpairs(lower = list(continuous = wrap("points", alpha = 0.3, size=0.5)), diag=list(continuous='barDiag'),
+                   upper = list(continuous = wrap("cor", size = 2))) + theme(axis.text = element_text(size = 5), #change axis label sizes to stop overlapping 
+      strip.text.x = element_text(size = 5), #change row text label sizes
+      strip.text.y = element_text(size = 5)) #change col text label sizes
+```
+
+
+Findings: Some of the variables appear to be correlated. For example, tax (full-value property-tax rate per $10,000) and rad (index of accessibility to radial highways) have a strong positive correlation coefficient of 0.91. Indus (proportion of non-retail business acres per town) and nox (nitrogen oxides concentration (parts per 10 million)) also have a high correlation coefficient of 0.764, which suggests that the increasing presence of non-retail businesses may correspond to increases in the nitrogen oxides concentration levels. Lstat (lower status of the population (percent)) and medv (median value of owner-occupied homes in 1000s of dollars) have a negative correlation, with a correlation coefficient of -0.738, which is resonable since more people with lower status would be expected to have lower median values in homes.
+
+The diagonal bar graphs show that few of the variables have a normal distribtuion, such as rm(average number of rooms per dwellin) and medv(median value of owner-occupied homes in $1000s). Variables like age (proportion of owner-occupied units built prior to 1940) are skewed to the left, which implies that most of the units are old and built before 1940 and there are very few cases of units built after 1940. Other variables dis (weighted mean of distances to five Boston employment centres) and lstat (lower status of the population (percent)) are skewed to the right. We can interpret this as most units are in the lower status of the population and most units have a short average distance to nearby employment centers in Boston.
+
+##### c.Association of Predictors with Per Capita Crime Rate
+There does seem to be an association between per capita crime rate and some of the predictor variables, though the variables with the highest association are considered moderately correlated (between 0.5 and 0.7). Most of the predictor variables are weakly correlated with per capita crime rate.
+
+| rad&crime = 0.626 The higher the index of accessibility to radial highways, the higher per capita crime rate by town.
+| tax&crime = 0.583 The higher the full-value property-tax rate per $10,000, the higher per capita crime rate by town.
+| lstat&crime = 0.456 More crime happens for those in lower status of the population.
+| medv&crime = -3.888 The higher the median value of owner-occupied homes, the less crime that occurs.
+
+
+##### Census Tracts and Per Capita Crime Rate
+
+census tracts of Boston appear to have particularly high crime rates? Tax rates? Pupil-teacher ratios? Comment on the range of each predictor.
+## ISL Exercise 3.7.3 (12pts)
+
+## ISL Exercise 3.7.15 (20pts)
+
+## Bonus question (20pts)
+
+For multiple linear regression, show that $R^2$ is equal to the correlation between the response vector $\mathbf{y} = (y_1, \ldots, y_n)^T$ and the fitted values $\hat{\mathbf{y}} = (\hat y_1, \ldots, \hat y_n)^T$. That is
+$$
+R^2 = 1 - \frac{\text{RSS}}{\text{TSS}} = [\operatorname{Cor}(\mathbf{y}, \hat{\mathbf{y}})]^2.
+$$
+
