@@ -1,7 +1,7 @@
 ---
 title: "Biostat 212a Homework 2"
 subtitle: "Due Feb 6, 2024 @ 11:59PM"
-author: "YOUR NAME and UID"
+author: "Kathy Hoang and UID:506333118"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
 format:
   html:
@@ -153,11 +153,23 @@ Weekly %>% ggpairs(progress = FALSE, #hide progress output
                   strip.text.y = element_text(size = 5)) #change col text label sizes
 ```
 
+```{r}
+#Time Series Plot
+year_factor <- as.factor(Weekly$Year) #don't overwrite original dataset! will have other issues running, had to rm(Weekly) and reload the ISLR2 library
+ggplot(Weekly, aes(x = year_factor, y = Volume)) + geom_boxplot() + theme(axis.text.x = element_text(angle = 90, hjust = 1)) + labs(title = "Time Series Boxplot: Volume by Year", x = "Year", y = "Volume")
+```
+
+
+```{r}
+#Direction Bar Plot (closer look at Direction bar plot from ggpairs)
+ggplot(Weekly, aes(x = Direction)) + geom_bar()
+```
+
 Patterns: 
 
-There are no strong correlations between most of the variables. The scatter plots show no strong linear relationships between the variables, and all of the coefficients are very low (<0.1) except for the correlation between Year and Volume, which has a strong positive correlation coefficient of 0.841942. Most of the other correlation coefficients are negative, but really close to 0.
+There are no strong correlations between most of the variables. The scatter plots show no strong linear relationships between the variables, and all of the coefficients are very low (<0.1) except for the correlation between Year and Volume. These two variables have a strong positive correlation coefficient of 0.841942, which is also reflected in the time series plot above. Most of the other correlation coefficients are negative, but really close to 0.
 
-The bar plots show that the number of Up days is slightly more than the number of Down days, meaning that there were more times when the stock market was going up in a positive direction. 
+The bar plots show that the number of Up days is slightly more than the number of Down days, meaning that there were more times when the stock market was going up in a positive direction.
 
 The distribution of Volume is right-skewed.
 
@@ -243,11 +255,10 @@ library(MASS)
 #Fit the model with Lad 2 as the only predictor
 fit_lag2_lda <- lda(Direction ~ Lag2, data = training_set)
 #note: don't need to specify family = binomial because lda() is a classification model
-fit_lag2_lda
 
 #LDA is a classification model so we predict the class (need to specify $class)
 pred_lag2_lda <- predict(fit_lag2_lda, test_set)$class
-pred_lag2_lda
+summary(pred_lag2_lda)
 
 #Confusion Matrix - compare pred to actual Direction
 table(pred_lag2_lda, test_set$Direction)
@@ -263,16 +274,15 @@ The LDA model achieved similar results to the logistic regression model, with th
 #Fit the model with Lad 2 as the only predictor
 fit_lag2_qda <- qda(Direction ~ Lag2, data = training_set)
 #note: don't need to specify family = binomial because qda() is a classification model
-fit_lag2_qda
 
 #Predict - Generate probabilities
 pred_lag2_qda <- predict(fit_lag2_qda, test_set)$class
+summary(pred_lag2_qda)
 
 #Confusion Matrix - compare pred to actual Direction
 table(pred_lag2_qda, test_set$Direction)
 
 length(pred_lag2_qda)
-
 ```
 The confusion matrix shows that the QDA model always chose "Up" as the prediction, and the overall fraction of correct predictions is 61/104= 0.5865. This implies that when the stock market was going down, the QDA model always predicted that it would go up and was right 0% of the time. When the stock market was going up it was right 100% of the time. Despite this, the QDA model performed only slightly worse than the LDA and logistic regression models (0.5865 vs 0.625).
 
@@ -323,29 +333,79 @@ The best performing models were Logistic Regression and LDA, with an overall fra
 ## Bonus question: ISL Exercise 4.8.13 Part (j) (30pts)
 (j) Experiment with different combinations of predictors, including possible transformations and interactions, for each of the methods. Report the variables, method, and associated confusion matrix that appears to provide the best results on the held out data. Note that you should also experiment with values for K in the KNN classifier.
 
+
+
+**Answer**
+
+Although the plots I generated from ggpairs earlier in my exploratory data analysis showed that there were no strong correlation between the variables, I will experiment with the interaction effect of consecutive Lag variables to see if it will improve the performance of the logistic regression model. I choose these variables because I believe that the percentage return for the week prior may have an effect on the percentage return for the subsequent week. For example, I chose to explore different combinations of the interaction effects of Today, Lag1, Lag2, Lag3, and Lag4 because I believe that Lag 4 may influence Lag 3, Lag 3 on Lag 2, ..., and overall have an effect on the current week (Today).
+
+**Logistic Regression with Perfect Prediction/Quasi-Complete Separation**
+
 ```{r}
-#Logistic Regression with Lag4 and Lag5
-fit_logistic_lag45 <- glm(Direction ~ Lag4:Lag5, data = training_set, family = binomial)
-summary(fit_logistic_lag45)
-probs_logistic_lag45 <- predict(fit_logistic_lag45, test_set, type = "response")
-pred_logistic_lag45 <- rep("Down", length(probs_logistic_lag45))
-pred_logistic_lag45[probs_logistic_lag45 > 0.5] <- "Up"
-table(pred_logistic_lag45, actual_Y)
-mean(pred_logistic_lag45 == actual_Y)
-#0.5865385
+#Logistic Regression with Interaction Effect of Today and 4 previous weeks (Today, Lag1, Lag2, Lag3, and Lag4)
+fit_logistic_interaction_3 <- glm(Direction ~ Today*Lag1*Lag2*Lag3*Lag4, data = training_set, family = binomial)
+summary(fit_logistic_interaction_3)
+probs_logistic_interaction_3 <- predict(fit_logistic_interaction_3, test_set, type = "response")
+pred_logistic_interaction_3 <- rep("Down", length(probs_logistic_interaction_3))
+pred_logistic_interaction_3[probs_logistic_interaction_3 > 0.5] <- "Up"
+table(pred_logistic_interaction_3, actual_Y)
+mean(pred_logistic_interaction_3 == actual_Y)
+#0.9519231
 ```
 
 ```{r}
-#Logistic Regression with first 3 Lags * Interaction Effect
-fit_logistic_interaction <- glm(Direction ~ Lag1*Lag2*Lag3, data = training_set, family = binomial)
+#Logistic Regression with Interaction Effect of Today and 2 previous weeks (Today, Lag1, Lag2)
+fit_logistic_interaction_2 <- glm(Direction ~ Today*Lag1*Lag2, data = training_set, family = binomial)
+summary(fit_logistic_interaction_2)
+probs_logistic_interaction_2 <- predict(fit_logistic_interaction_2, test_set, type = "response")
+pred_logistic_interaction_2 <- rep("Down", length(probs_logistic_interaction_2))
+pred_logistic_interaction_2[probs_logistic_interaction_2 > 0.5] <- "Up"
+table(pred_logistic_interaction_2, actual_Y)
+mean(pred_logistic_interaction_2 == actual_Y)
+#0.9807692
+```
+
+```{r}
+#Logistic Regression with Interaction Effect of Today and Lag1
+fit_logistic_interaction <- glm(Direction ~ Today*Lag1, data = training_set, family = binomial)
 summary(fit_logistic_interaction)
 probs_logistic_interaction <- predict(fit_logistic_interaction, test_set, type = "response")
 pred_logistic_interaction <- rep("Down", length(probs_logistic_interaction))
 pred_logistic_interaction[probs_logistic_interaction > 0.5] <- "Up"
 table(pred_logistic_interaction, actual_Y)
 mean(pred_logistic_interaction == actual_Y)
-#0.6057692
+#1.00
 ```
+**Answer** 
+Today is considered a perfect predictor as it causes quasi-complete separation. This means that the model is able to perfectly predict the direction of the stock market using Today. This is likely due to the fact that these two variables are perfectly correlated with each other as the direction of the stock market today is "Up" if Today is positive or "Down" if Today is negative. The following articles below explain some ways to handle perfect separation, such as combining predictors, as "perfect predictors cause some issues with the logistic model, but they are also often among your more important predictors". I did this in the first logistic regression model with the interaction effect of Today and 4 previous weeks, and the model performed well with an overall fraction of correct predictions of 0.9519231. However, the model with the interaction effect of Today and 2 previous weeks performed even better with an overall fraction of correct predictions of 0.9807692. The model with the interaction effect of Today and Lag1 performed the best with an overall fraction of correct predictions of 1.00 (perfectly predicted 100%). 
+
+Despite the high performance of the logistic regression model with the interaction effects of Today, the model is likely overfitting the data and the validity of the model is questionable. Perhaps regularization or penalized likelihood could be used in the future to address this issue. In the meantime, I will explore other models to see how well they will perform without using the Today variable.
+
+[Article on Complete Separation/Perfect Prediction by UCLA](https://stats.oarc.ucla.edu/other/mult-pkg/faq/general/faqwhat-is-complete-or-quasi-complete-separation-in-logistic-regression-and-what-are-some-strategies-to-deal-with-the-issue/)
+
+[More on Warning Message](https://community.rstudio.com/t/logistic-regression-model-glm-fit-fitted-probabilities-numerically-0-or-1-occurred/9828/16)
+
+[More on how to Handle Perfect Separation](https://www.linkedin.com/advice/3/how-can-you-handle-perfect-separation-logistic-regression-cluke)
+
+
+**Logistic Regression**
+I will now explore the logistic regression model with the interaction effect of Lag4 and Lag5, as I want to see if the interaction effect of the two oldest (furthest from the given week of direction) consecutive weeks will have an effect on the direction of the stock market. 
+
+Note: Please see comments at the end of each code chunk for the results of each model.
+
+```{r}
+#Logistic Regression with Interaction Effect of Lag4 and Lag5
+fit_logistic_interaction45 <- glm(Direction ~ Lag4*Lag5, data = training_set, family = binomial)
+summary(fit_logistic_interaction45)
+probs_logistic_interaction45 <- predict(fit_logistic_interaction45, test_set, type = "response")
+pred_logistic_interaction45 <- rep("Down", length(probs_logistic_interaction45))
+pred_logistic_interaction45[probs_logistic_interaction45 > 0.5] <- "Up"
+table(pred_logistic_interaction45, actual_Y)
+mean(pred_logistic_interaction45 == actual_Y)
+#0.5576923 - Performed worse than the Logistic Regression model with Lag 2, which had an overall fraction of correct predictions of 0.625
+```
+Here, I use a combination of interaction effects and logarithmic transformation on 2 consecutive weeks. I chose Lag1 and Lag2 as the variables because they are the 2 most recent weeks and I believe that the weeks prior could potentially have a relationship with the current week in detemrmining the direction of the stock market. I also chose to use the log transformation of Volume because the distribution of Volume is right-skewed (as we saw in the plots in part a), and the log transformation should help to transform the skewed data to approximately conform to normality. I believe this will improve the performance of the model.
+
 ```{r}
 #Logistic Regression with first 2 Lags Interaction Effect and Log Transformation of Volume
 fit_logistic_transformation <- glm(Direction ~ Lag1*Lag2 + log(Volume), data = training_set, family = binomial)
@@ -355,31 +415,26 @@ pred_logistic_transformation <- rep("Down", length(probs_logistic_transformation
 pred_logistic_transformation[probs_logistic_transformation > 0.5] <- "Up"
 table(pred_logistic_transformation, actual_Y)
 mean(pred_logistic_transformation == actual_Y)
-#0.6057692
+#0.6057692 - Still relatively high, but still did not perform as well as the original Logistic Regression model with just Lag 2 as the sole predictor.
 ```
+
+**Linear Discriminant Analysis LDA**
+
+I will explore using LDA with the combination of odd lag numbers: Lag1, Lag3, and Lag5. I chose these variables because I am curious if the relationship between the odd lag numbers could be important in predicting the direction of the stock market. People theorize that stock comes in "waves" (up and down movements), so perhaps there is a pattern every other week that could be important in predicting the direction of the stock market.
 
 ```{r}
 #LDA with combinations of odd lag numbers: Lag1, Lag3, and Lag5
 fit_CombOdd_lda <- lda(Direction ~ Lag1+Lag3+Lag5, data = training_set)
 #LDA is a classification model so we predict the class (need to specify $class)
 pred_CombOdd_lda <- predict(fit_CombOdd_lda, test_set)$class
-pred_CombOdd_lda
-
+summary(pred_CombOdd_lda)
 #Confusion Matrix - compare pred to actual Direction
 table(pred_CombOdd_lda, test_set$Direction)
 #Overall Fraction of Correct Predictions
 mean(pred_CombOdd_lda == test_set$Direction)
-#0.5384615
+#0.5384615 - The performance of the model dropped significantly compared to 0.625
 ```
-```{r}
-#LDA with combinations of odd lag numbers: Lag1, Lag3, and Lag5
-fit_CombOdd_lda <- lda(Direction ~ Lag1+Lag3+Lag5, data = training_set)
-pred_CombOdd_lda <- predict(fit_CombOdd_lda, test_set)$class
-pred_CombOdd_lda
-table(pred_CombOdd_lda, actual_Y)
-mean(pred_CombOdd_lda == actual_Y)
-#0.5384615
-```
+Now I perform LDA by adding polynomial transformations as there could be non-linear associations between the predictors and the response. I believe this is a good approach to take as the scatterplots in part suggested non-linearity and typically market behavior cannot be captured by a linear relationship.
 ```{r}
 #LDA with sq and quadratic transformation and combination of even numbers Lag2 and Lag4
 fit_lda_transformation <- lda(Direction ~ Lag2^2+Lag4^4, data = training_set)
@@ -388,71 +443,153 @@ pred_lda_transformation
 table(pred_lda_transformation, actual_Y)
 mean(pred_lda_transformation == actual_Y)
 #0.625 same as LDA Lag2
-```
 
+
+#LDA without transformations on same variables to compare
+fit_lda_24 <- lda(Direction ~ Lag2+Lag4, data = training_set)
+pred_lda_24 <- predict(fit_lda_24, test_set)$class
+pred_lda_24
+table(pred_lda_24, actual_Y)
+mean(pred_lda_24 == actual_Y)
+#0.625 same as LDA Lag2
+```
+I ran another LDA model with the same predictor variables above, but without the polynomial terms to compare the performance of the QDA models. It seems that they both produce the exact same overall fraction of correct prediction, so adding polynomial transformations has no effect. I tested this on different Lag variables (Ex 2 and 3, 3 and 4) and on different polynomial terms (squared, cubic, quadratic,etc) and the results were the same. 
+
+**Quadratic Discriminant Analysis QDA**
+I noticed that QDA performed similarly to LDA. I tried replacing the above code with qda instead of lda and the results were the same. So below, I tried doing something a bit different and running QDA with the combination of the square root of the absolute value of Lag2 and Lag4 squared to see if these transformations would change the performance of the model. I chose to do Lag2 and Lag4 after reading up on [Elliot's Wave Theory]("https://www.investopedia.com/terms/e/elliottwavetheory.asp") that suggests that the stock market moves in waves, and in this case Lag2 and Lag4 would be the 2nd and 4th "corrective" waves.
+
+It performed slightly worse than the model with squared and quadratic terms, with an overall fraction of correct predictions of 0.5865385. Out of curiosity, I tried running this model with LDA and the results were the same. 
 ```{r}
-#QDA with various transformations: squared, exp, and 1/x to Lag2:4
-fit_qda_transformation <- qda(Direction ~ Lag2^2 + exp(Lag3) + (1/Lag4), data = training_set)
+#QDA with various transformations: sqrt and squared
+fit_qda_transformation <- qda(Direction ~ sqrt(abs(Lag2))+Lag4^2, data = training_set)
+#had to use abs for sqrt to avoid negative values
 fit_qda_transformation
 pred_qda_transformation <- predict(fit_qda_transformation, test_set)$class
 table(pred_qda_transformation, actual_Y)
 mean(pred_qda_transformation == actual_Y)
-#0.4326923
+#0.5865385 
+
+#compare with LDA - the same
+fit_lda_transformation <- qda(Direction ~ sqrt(abs(Lag2))+Lag4^2, data = training_set)
+#had to use abs for sqrt to avoid negative values
+fit_lda_transformation
+pred_lda_transformation <- predict(fit_lda_transformation, test_set)$class
+table(pred_lda_transformation, actual_Y)
+mean(pred_lda_transformation == actual_Y)
+#0.5865385 - There does not seem to be a significant improvement in the performance of the model
 ```
+
+I chose the following variables (Lag 1, Lag2, and Volume) as interaction terms because I was curious if the volume of stocks traded would have an effect on the relationship between the Lag variables. Thus, I ran QDA with the interaction effect of Lag1 and Volume as well as Lag 2 and Volume to see if the interaction effect of the 2 previous weeks and the volume of stocks traded would have an effect on the direction of the stock market. 
+
 ```{r}
 #QDA with combinations and interaction effect with Volume
-fit_qda_interaction <- qda(Direction ~ Lag1*Volume + Lag2*Lag5*Volume, data = training_set)
+fit_qda_interaction <- qda(Direction ~ Lag1*Volume + Lag2*Volume, data = training_set)
 fit_qda_interaction
 pred_qda_interaction <- predict(fit_qda_interaction, test_set)$class
 table(pred_qda_interaction, actual_Y)
 mean(pred_qda_interaction == actual_Y)
-#0.5192308
+#0.4519231 - The performance of the model dropped significantly
 ```
-```{r}
-#KNN with K=3
 
+**K-Nearest Negihbors KNN**
+As I mentioned earlier, the KNN model with K=1 performed the worst out of all the models and I believe that a more optimal K is needed to improve the performance of the KNN model. I will now look at the performance of the KNN model with Lag 3 across different values of K to choose a K that will lead to the highest overall fraction of correction predictions. I will choose 212 as my seed for reproducibility.
+
+```{r}
+#KNN with Lag 3
+train_X3 <- as.matrix(training_set$Lag3)
+test_X3 <- as.matrix(test_set$Lag3)
+train_Y3_labels <- training_set$Direction
+
+#KNN with different values of K
 k_values <- 1:30
 correction_accuracy_array <- c()
 set.seed(212)
 for (k in k_values) {
-  pred_knn <- knn(train = train_X, test = test_X, cl = train_Y_labels, k = k)
+  pred_knn <- knn(train = train_X3, test = test_X3, cl = train_Y3_labels, k = k)
   table(pred_knn, actual_Y)
   fraction_correct <- (mean(pred_knn == actual_Y))
   correction_accuracy_array <- c(correction_accuracy_array, fraction_correct) #append to array
 }
 print(correction_accuracy_array)
+max(correction_accuracy_array)
+which.max(correction_accuracy_array) #k-value with max accuracy
 
 plot(k_values, correction_accuracy_array, type = "l", xlab = "K Values", ylab = "Overall Fraction of Correct Predictions")
-title(main = "Exploring Different Values of K in K-Nearest Neighbors (KNN) \n for Performance of Correct Predictions")
+title(main = "Exploring Different Values of K in K-Nearest Neighbors (KNN) \n for Performance of Correct Predictions", sub = "Lag 3")
 ```
-
+As shown in the plot above, the overall fraction of correct predictions peaked at K=25, so I will choose to observe the KNN model for Lag 3 with this optimal k value more closely. I will choose a different seed this time to see if the results are consistent.
 
 ```{r}
-train_X <- as.matrix(training_set$Lag2)
-test_X <- as.matrix(test_set$Lag2)
-train_Y_labels <- training_set$Direction
+# OPTIMAL K: KNN with K=25
+
 set.seed(1)
-pred_lag2_knn <- knn(train = train_X, test = test_X, cl = train_Y_labels, k = 1)
+pred_lag3_knn <- knn(train = train_X3, test = test_X3, cl = train_Y3_labels, k = 25)
 
 #Model Evaluation
 actual_Y <- test_set$Direction
 
 #Confusion Matrix
-table(pred_lag2_knn, actual_Y)
+table(pred_lag3_knn, actual_Y)
 
 #Overall Fraction of Correct Predictions
-mean(pred_lag2_knn == actual_Y)
+mean(pred_lag3_knn == actual_Y)
+#0.625 - highest overall fraction of correct predictions for KNN
 ```
+The Confusion Matrix shows that the KNN model with K=25 made 51 + 14 = 65 correct predictions and 29 + 10 = 39 incorrect predictions. The model made 29 Type I errors (false positives) and 10 Type II errors (false negatives). The overall fraction of correct predictions is still 65/104 = 0.625, which is the same as the LDA and logistic regression models with Lag2 as the only predictor. Thus, this KNN model with K=25 showed improved accuracy and performed the best compared to not only the other KNN models, but all the models in general.
 
+Below, I change the training set and test set to include more variables and see if the KNN model will perform better with more predictors. I chose to use the combination of Lag1, Lag2, and Lag3 as predictors because I believe that the percentage returns from the previous 3 weeks could be important in predicting the direction of the stock market. 
+```{r}
+#KNN with Lag 3
+train_X123 <- as.matrix(training_set[,c("Lag1","Lag2","Lag3")])
+test_X123 <- as.matrix(test_set[,c("Lag1","Lag2","Lag3")])
+train_Y123_labels <- training_set$Direction
+
+#KNN with different values of K
+k_values <- 1:30
+correction_accuracy_array <- c()
+set.seed(212)
+for (k in k_values) {
+  pred_knn <- knn(train = train_X123, test = test_X123, cl = train_Y123_labels, k = k)
+  table(pred_knn, actual_Y)
+  fraction_correct <- (mean(pred_knn == actual_Y))
+  correction_accuracy_array <- c(correction_accuracy_array, fraction_correct) #append to array
+}
+print(correction_accuracy_array)
+max(correction_accuracy_array)
+which.max(correction_accuracy_array) #k-value with max accuracy
+
+plot(k_values, correction_accuracy_array, type = "l", xlab = "K Values", ylab = "Overall Fraction of Correct Predictions")
+title(main = "Exploring Different Values of K in K-Nearest Neighbors (KNN) \n for Performance of Correct Predictions", sub = "Lag 1 Lag 2 and Lag 3")
+```
+```{r}
+# OPTIMAL K: KNN with K=20
+
+set.seed(1)
+pred_lag123_knn <- knn(train = train_X123, test = test_X123, cl = train_Y123_labels, k = 20)
+
+#Model Evaluation
+actual_Y <- test_set$Direction
+
+#Confusion Matrix
+table(pred_lag123_knn, actual_Y)
+
+#Overall Fraction of Correct Predictions
+mean(pred_lag123_knn == actual_Y)
+#0.625 - highest overall fraction of correct predictions for KNN
+```
+This KNN model with Lag1, Lag2, and Lag3 as predictors achieved the same highest overall fraction of correct predictions of 0.625 when K=20. Both plots of the k-values show that the model predicted the direction of the stock market most accurately (>0.55) for large values of K, particularly when K is over 20.
+
+**Naive Bayes**
+I will now explore different combinations for the Naive Bayes model, though it is important to note that Naive Bayes cannot handle interaction effects as it violates the independence assumption of the Naive Bayes classifier. Thus, all the predictors need to be independent of each other. I chose Lag2 and Lag 3 as predictors because I wanted to further investiage Elliot's wave theory (as linked earlier in the QDA section), but this time skip the previous week (assume Lag1 as a "corrective" wave) and see if the two middle consecutive weeks could be considered a "motive" wave and thus, important in predicting the direction of the stock market. 
 
 ```{r}
 #naive Bayes combinations (note: naive bayes can't handle interaction terms)
-naiveBayes_fit_combination <- naiveBayes(Direction ~ Lag2+Lag5+Volume, data = training_set)
+naiveBayes_fit_combination <- naiveBayes(Direction ~ Lag2+Lag3, data = training_set)
 naiveBayes_pred_combination <- predict(naiveBayes_fit_combination, test_set)
 
 table(naiveBayes_pred_combination, actual_Y)
 mean(naiveBayes_pred_combination == actual_Y)
-#0.4423077
+#0.5865385 - This is the same as the other naive Bayes model with only Lag 2 as the predictor.
 ```
 
 ```{r}
@@ -462,14 +599,23 @@ naiveBayes_lag2_pred <- predict(naiveBayes_lag2_fit, test_set)
 
 table(naiveBayes_lag2_pred, actual_Y)
 mean(naiveBayes_lag2_pred == actual_Y)
-#0.5384615
+#0.5384615 - The performance of the model dropped by about 0.05.
 ```
 
-
 ## Bonus question: ISL Exercise 4.8.4 (30pts)
-When the number of features p is large, there tends to be a deterioration in the performance of KNN and other local approaches that perform prediction using only observations that are near the test ob- servation for which a prediction must be made. This phenomenon is known as the curse of dimensionality, and it ties into the fact that non-parametric approaches often perform poorly when p is large. We will now investigate this curse.
+When the number of features p is large, there tends to be a deterioration in the performance of KNN and other local approaches that perform prediction using only observations that are near the test observation for which a prediction must be made. This phenomenon is known as the curse of dimensionality, and it ties into the fact that non-parametric approaches often perform poorly when p is large. We will now investigate this curse.
 
-(a) Suppose that we have a set of observations, each with measure- ments on p = 1 feature, X. We assume that X is uniformly (evenly) distributed on [0, 1]. Associated with each observation is a response value. Suppose that we wish to predict a test obser- vation’s response using only observations that are within 10 % of the range of X closest to that test observation. For instance, in order to predict the response for a test observation with X = 0.6, we will use observations in the range [0.55,0.65]. On average, what fraction of the available observations will we use to make the prediction?
+(a) Suppose that we have a set of observations, each with measurements on p = 1 feature, X. We assume that X is uniformly (evenly) distributed on [0, 1]. Associated with each observation is a response value. Suppose that we wish to predict a test observation’s response using only observations that are within 10 % of the range of X closest to that test observation. For instance, in order to predict the response for a test observation with X = 0.6, we will use observations in the range [0.55,0.65]. On average, what fraction of the available observations will we use to make the prediction?
+
+For X values between 0.00 and 0.05, we will use observation that are in [0, X+0.5]. 
+For X values between 0.05 and 0.95, we will use observation that are in [X-0.5, X+0.5].
+For X values between 0.95 and 1.00, we will use observations that are in [X-0.5, 1].
+
+For the ranges [0.00,0.05] and [0.95,1.00], we use between 5% and 10% of observations, which averages to 7.5% for each range.
+For the range [0.05,0.95], we use 10% of the observations.
+(.075*0.05) + (.10*0.90) + (.075*0.05) = 0.0975 
+
+Thus, 9.75% of the available observations will be used to make the prediction.
 
 (b) Now suppose that we have a set of observations, each with measurements on p = 2 features, X1 and X2. We assume that (X1, X2) are uniformly distributed on [0, 1] × [0, 1]. We wish to predict a test observation’s response using only observations that are within 10 % of the range of X1 and within 10 % of the range of X2 closest to that test observation. For instance, in order to predict the response for a test observation with X1 = 0.6 and X2 = 0.35, we will use observations in the range [0.55, 0.65] for X1 and in the range [0.3,0.4] for X2. On average, what fraction of the available observations will we use to make the prediction?
 
