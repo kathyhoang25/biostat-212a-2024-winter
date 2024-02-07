@@ -280,7 +280,8 @@ pred_lag2_qda <- predict(fit_lag2_qda, test_set)$class
 summary(pred_lag2_qda)
 
 #Confusion Matrix - compare pred to actual Direction
-table(pred_lag2_qda, test_set$Direction)
+table(pred_lag2_qda, actual_Y)
+mean(pred_lag2_qda == actual_Y)
 
 length(pred_lag2_qda)
 ```
@@ -601,6 +602,17 @@ table(naiveBayes_lag2_pred, actual_Y)
 mean(naiveBayes_lag2_pred == actual_Y)
 #0.5384615 - The performance of the model dropped by about 0.05.
 ```
+**Analysis for Question j - Best Performing**
+
+The logistic regression model with the interaction effect of Today and Lag1 performed the best with an overall fraction of correct predictions of 1.00. However, because Today is perfect correlated with Direction, this model most likely cannot generalize to new data so the reliability and validity of the model is questionable. As I learned from the sites linked earlier, a perfect predictor could still be important and should not be tossed out entirely. Combining other variables with this perfect predictor, I would consider the model with the interaction effect of Today and Lag variables 1-4, which had an overall fraction of correct predictions of 0.9519231. It is important to note that the model's predictive power is uncertain, so we should proceed with caution and add a penalty term or regularization to address this issue when using the model in the future.
+
+If we exclude the logistic regression model with the interaction effect of Today, K-Nearest Neighbors and Linear Discriminate Analysis performed the best out of the other models with an overall fraction of correct predictions of 0.625. The KNN model with Lag3 reached its highest prediction accuracy at K=25 and the second KNN model with Lag1, Lag2, and Lag3 at K=20. This was a significant 25% ((.625-.5) / .5) percentage increase from the original KNN model with K=1 (from part g), which had an overall fraction of correct predictions of 0.5. The LDA achieved the same accuracy of 0.625 even when polynomial transformations (squared and quadratic) were added. Note that this was the same accuracy that we previously achieved from LDA and Logistic regression models with Lag2 as the sole predictor. 
+
+**Other Models' Performance That Stayed the Same (Compared to Initial Model with Lag 2)**
+The next best performing model were the QDA model and Naive Bayes Model.The QDA model with the combination of the square root of the absolute value of Lag2 and Lag4 square performed the same as the initial QDA model (from part f) with an overall fraction of correct predictions of 0.5865385. The Naive Bayes model with the combination of Lag2 and Lag3 as predictors also showed no improvement from the model with only Lag2 as the predictor, with an overall fraction of correct predictions of 0.5865385. 
+
+**Some Models that Performed Worse**
+Surprisingly, the performance of logistic regression actually declined when I tried to add a combination of Lag variables and logarithmic transformation if Volume. I thought that adding log should help normalize the skewedness of Volume, but the model performed worse with an overall fraction of correct predictions of 0.6057692. The LDA model with the combination of odd lag numbers: Lag1, Lag3, and Lag5 also performed worse with an overall fraction of correct predictions of 0.5384615, rejecting my theory that the stock behavior could be predicted by possible "waves" every other week. 
 
 ## Bonus question: ISL Exercise 4.8.4 (30pts)
 When the number of features p is large, there tends to be a deterioration in the performance of KNN and other local approaches that perform prediction using only observations that are near the test observation for which a prediction must be made. This phenomenon is known as the curse of dimensionality, and it ties into the fact that non-parametric approaches often perform poorly when p is large. We will now investigate this curse.
@@ -612,18 +624,42 @@ For X values between 0.05 and 0.95, we will use observation that are in [X-0.5, 
 For X values between 0.95 and 1.00, we will use observations that are in [X-0.5, 1].
 
 For the ranges [0.00,0.05] and [0.95,1.00], we use between 5% and 10% of observations, which averages to 7.5% for each range.
-For the range [0.05,0.95], we use 10% of the observations.
-(.075*0.05) + (.10*0.90) + (.075*0.05) = 0.0975 
+For the range [0.05,0.95], we use 10% of the observations. 
+
+```{r}
+(.075*0.05) + (.10*0.90) + (.075*0.05) 
+#= 0.0975 
+```
 
 Thus, 9.75% of the available observations will be used to make the prediction.
 
 (b) Now suppose that we have a set of observations, each with measurements on p = 2 features, X1 and X2. We assume that (X1, X2) are uniformly distributed on [0, 1] × [0, 1]. We wish to predict a test observation’s response using only observations that are within 10 % of the range of X1 and within 10 % of the range of X2 closest to that test observation. For instance, in order to predict the response for a test observation with X1 = 0.6 and X2 = 0.35, we will use observations in the range [0.55, 0.65] for X1 and in the range [0.3,0.4] for X2. On average, what fraction of the available observations will we use to make the prediction?
 
-(c) Now suppose that we have a set of observations on p = 100 fea- tures. Again the observations are uniformly distributed on each feature, and again each feature ranges in value from 0 to 1. We wish to predict a test observation’s response using observations within the 10 % of each feature’s range that is closest to that test observation. What fraction of the available observations will we use to make the prediction?
+For the observation to be within 10% of X1 and 10% of X2, we can square the result we got from part a.
+0.0975**2 = 0.00950625 = 0.950625%
 
-(d) Using your answers to parts (a)–(c), argue that a drawback of KNN when p is large is that there are very few training obser- vations “near” any given test observation.
+Therefore, on average, we will use 0.950625% of the available observations to make the prediction.
 
-(e) Now suppose that we wish to make a prediction for a test obser- vation by creating a p-dimensional hypercube centered around the test observation that contains, on average, 10 % of the train- ing observations. For p = 1,2, and 100, what is the length of each side of the hypercube? Comment on your answer.
-curse of di- mensionality
+(c) Now suppose that we have a set of observations on p = 100 features. Again the observations are uniformly distributed on each feature, and again each feature ranges in value from 0 to 1. We wish to predict a test observation’s response using observations within the 10 % of each feature’s range that is closest to that test observation. What fraction of the available observations will we use to make the prediction?
+
+0.0975**100 = 7.951729e-102 = 0%.
+
+(d) Using your answers to parts (a)–(c), argue that a drawback of KNN when p is large is that there are very few training observations “near” any given test observation.
+
+As we saw in parts a-c, as p increases and becomes very large, the fraction of available observations that we will use to make the prediction decreases significantly and goes to 0. This curse of dimensionality is a drawback of KNN when p is large because the model will have very few training observations to make the prediction, and thus, the model will not be able to make accurate predictions.
+
+$$
+\lim_{p \to \infty} 0.0975^p = 0
+$$
+(e) Now suppose that we wish to make a prediction for a test observation by creating a p-dimensional hypercube centered around the test observation that contains, on average, 10 % of the training observations. For p = 1,2, and 100, what is the length of each side of the hypercube? Comment on your answer.
+
+L = 10%^(1/p)
+For p = 1, the length of the side of the hypercube is 0.1^(1/1) = 0.1^1 = 0.1.
+For p = 2, the length of the side of the hypercube is 0.1^(1/2) = 0.1^0.5 = 0.3162278.
+For p = 100, the length of the side of the hypercube is 0.1^(1/100) = 0.1^0.01 = 0.9772372.
+
+As p increases, the length of the side of the hypercube increases, and approaches 1.
+
+Note: From Joaquim's OH: xyz = 10%
 
 Note: A hypercube is a generalization of a cube to an arbitrary number of dimensions. When p = 1, a hypercube is simply a line segment, when p = 2 it is a square, and when p = 100 it is a 100-dimensional cube.
