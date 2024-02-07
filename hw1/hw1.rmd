@@ -46,8 +46,7 @@ $$
 $$
 where the expectations averages over variations in both $X$ and $Y$. (Hint: condition on $X$.)
 
-#### Optimal Regression Function ANSWER 
-
+#### Optimal Regression Function Answer
 
 $$
 \begin{align*}
@@ -164,14 +163,71 @@ $$
 
 ## ISL Exercise 2.4.3 (10pts)
 
+
 ```{r, eval = F}
+#Ignore this code chunk
 library(tidyverse)
-fit <- lm(sales ~ TV, data = )
+#fit <- lm(sales ~ TV, data = )
 ```
+
+We now revisit the bias-variance decomposition.
+
+#### 2.4.3 a: Sketch of (Squared) Bias, Variance, Training Error, Test Error, and Bayes Error Curves
+
+(a) Provide a sketch of typical (squared) bias, variance, training error, test error, and Bayes (or irreducible) error curves, on a single plot, as we go from less flexible statistical learning methods towards more flexible approaches. The x-axis should represent the amount of flexibility in the method, and the y-axis should represent the values for each curve. There should be five curves. Make sure to label each one.
+
+![2.4.3. a Sketch](images/243a.jpg)
+
+![Additional Sketch](images/Sketch.jpg)
+
+
+In case the image path doesn't work, I provided a link here:
+[Sketch](https://photos.app.goo.gl/yHRFD3UVGRxSsdCN9)
+
+#### 2.4.3 b: Explanation of the Shape of the Curves
+
+(b) Explain why each of the five curves has the shape displayed in part (a).
+
+Bias: As flexibility increases, bias decreases because the model can better fit the data and the predicted value is closer to the actual value. In general, the more flexible the model, the lower the bias (pg.35 in ISLR textbook). This is because the model can better fit the data and will closely match the training set. Notice that at the point the bias is at its lowest, the variance is at its highest, and visa versa (hence Bias-Variance Tradeoff).
+
+Variance: As flexibility increases, variance increases because the model is more sensitive to fluctuations in the training set. In general, more flexible statistical methods have higher variance (pg.35 in ISLR textbook). This is because the model is more likely to overfit the data and will not generalize well to new data. A model with no flexibility would not be able to capture the variability in the data, resulting in zero variance.
+
+Training Error: As flexibility increases, the training error decreases. The model can better capture the underlying patterns in the training set. Thus, the training error will be lower for more flexible models because they can better fit the training data, leading to predicted values that are closer to the true values. However, even if the training error is low, this only indicates improved performance on the training data and the model may not generalize well to new data, this is why we look at test error.
+
+Test Error: The shape of the test error is a concave curve that initially decreases as flexibility increases, but then increases after a certain point. This is because the error goes down as it becomes a closer fit, but then goes up as the model starts to overfit the data (it will not generalize well to unseen data). The test error is excessively high in the beginning where flexibility is low because the model is too simple and cannot capture the underlying patterns in the data. The test error is the lowest at the point where the bias and variance are balanced, which is the optimal level of flexibility for the model. This is the point where the model has the lowest test error and is the best fit for the data.
+
+Bayes Error/Irreducible Error: The Bayes Error is constant and does not change with the flexibility of the model. It is the lowest possible test error rate (pg.38` in ISLR textbook) that can be achieved and is the error that would be achieved by a perfect model. The Bayes Error is the lowest point on the graph and is the point that the test error is trying to reach. When the training error goes below the Bayes Error, it suggests that overfitting is occurring.
 
 ## ISL Exercise 2.4.4 (10pts)
 
+#### 2.4.4 a: Real-Life Applications of Classification
 
+(a)Describe three real-life applications in which classification might be useful. Describe the response, as well as the predictors. Is the goal of each application inference or prediction? Explain your answer.
+
+1. Medicare Fraud Detection: This was a research project I actually worked on during undergrad, where I used large CMS Medicare datasets to detect fraudulent providers. Response: The providers were classified as fraudulent or not fraudulent. Predictors: Features included the type of procedure/service they provided using HCPCS codes, the total Medicare reimbursement, and the ratio of the HCPCS to the number of Medicare beneficiaries. Goal: The objective of this project is prediction, as our ensemble model was used to predict whether a provider is fraudulent or not based on the features.
+
+2. Agricultural Planning/Soil Classification: Classification can be used to classify soil types based on their physical and chemical properties to optimize agricultural practices. Response: The response variable would represent the soil type (sand, loam, clay, silt, etc). Predictors: The predictors would include attributes about the soil such as the pH level, the amount of nitrogen, phosphorus, and potassium, the soil texture, and the soil color. Goal: The goal of this application is inference, as this information would be important for agricultural planning and land use management. This will allow farmers to know which soil is more fertile and where to plant crops so that they thrive best in their ideal soil types. 
+
+3. Image Classification (ex. Classify Images of Animals). Image classification refers to the task of assigning a label to an image from a fixed set of categories, and can be used for applications such as medical imaging, facial recognition, and object detection. In this case I will use animal image classification as my example. Response: The response variable would represent the label of the image, such as "cat", "dog", "bird', "wild animals", etc. Predictors: The predictors would include the pixel values of the image, the color, the texture, and the shape. Goal: The goal of this application is prediction, as the model would be used to predict the label of the image based on the predictors. Animal image classification can play an important role in wildlife conservation, as it can be used to monitor and track the population of endangered species and analyze their behavior.
+
+#### 2.4.4 a: Real-Life Applications of Regression
+
+(b) Describe three real-life applications in which regression might be useful. Describe the response, as well as the predictors. Is the goal of each application inference or prediction? Explain your answer.
+
+1. Netflix Popularity/User Engagement: This was a project that I worked on and presented at a data science symposium, in which I used regression to predict the popularity of Netflix shows. Response: The response variable would represent the popularity of the Netflix show, which was measured by the number of views, ratings, and comments. Predictors: The predictors included the genre, marketing budget, the cast, the director, and the duration. Goal: The goal of this application was mainly prediction but it could also be inference. The model was used to forecast the popularity of a Netflix show based on the predictors, but this could also be used to draw insights on viewer experience and inform recommendations on Netflix.
+
+2. Health Outcomes: Regression can be used to predict health outcomes, such as high blood pressure. Response: The response variable would represent the likelihood of a patient getting high blood pressure. Predictors: The predictors could include diet, age, weight or BMI, exercise habits, and genetic history. Goal: The goal of this application is prediction, as the model would be used to predict the likelihood of a patient getting high blood pressure based on the predictors.
+
+3. Salary Prediction: Regression can be applied to predict salary. Response: The response variable would represent the annual income of an individual. Predictors: The predictors could include education level, years of experience, position within the company/organization, location, and industry. Goal: The goal of this application is prediction, as the model would be used to predict the salary of an individual based on the predictors.
+
+#### 2.4.4 a: Real-Life Applications of Cluster Analysis
+(c) Describe three real-life applications in which cluster analysis might be useful.
+
+1. TED Talk Sentiment Analysis and Clustering: This was a project I worked on before, where I analyzed real TED Talk transcripts and used K-means clustering to group the TED Talks based on their sentiment scores and topics. Response: Sentiment were determined by the sentiment of the TED Talk, whether it is positive, negative, or neutral. Topic clusters were created based on themes that appeared (ex. women empowerment, disease, music, etc) Predictors: Several of the predictors included the text of the TED Talk transcripts, the number of views, the number of comments, and the speaker's occupation. Goal: The goal of this application is inference, as I aimed to draw insights and underlying themes from the TED Talks to identify popular topics and better understand audience engagement/preferences.
+
+2. Customer Segmentation: Cluster analysis can be used to segment customers based on their purchasing behavior. Response: The response variable would represent the customer segment, as the model seeks to identify groups of customers with similar purchasing behavior. Predictors: The predictors could include the frequency of purchases, the amount spent, the type of products purchased, and the location. Goal: The goal of this application is prediction, as the model would be used to predict the customer segment that each customer belongs to based on the predictors listed. However, one could argue that the goal could also be inference as the model could be used to draw marketing insights on customer preferences and purchasing patterns.
+
+3. City Planning / Urban Design: Cluster analysis can be used to group neighborhoods based on their characteristics for urban planning. Response: The response variable would represent the neighborhood cluster, as the model seeks to identify groups of neighborhoods with similar characteristics. Predictors: Predictors could entail population density, income levels, age, household size, education level, transportation patterns, and crime rate. Goal: The goal of this application is inference, as the model help city planners make informed decisions in allocating resources, devise a plan for affordable housing, and foster sustainable urban development.
 
 ## ISL Exercise 2.4.10 (30pts)
 
@@ -217,8 +273,9 @@ There are 506 rows and 13 columns in the Boston data set. The rows represent the
 More information about the Boston data set can be found from this source: https://rdrr.io/cran/ISLR2/man/Boston.html
 
 ##### b. Pairwise Scatterplots
-```{r part b scatterplots, evalue = T}
-Boston %>% ggpairs(lower = list(continuous = wrap("points", alpha = 0.3, size=0.5)), diag=list(continuous='barDiag'),
+```{r part b scatterplots, evalue = T, message = FALSE}
+Boston %>% ggpairs(progress = FALSE,  #hide progress output
+                   lower = list(continuous = wrap("points", alpha = 0.3, size=0.5)), diag=list(continuous='barDiag'),
                    upper = list(continuous = wrap("cor", size = 2))) + theme(axis.text = element_text(size = 5), #change axis label sizes to stop overlapping 
       strip.text.x = element_text(size = 5), #change row text label sizes
       strip.text.y = element_text(size = 5)) #change col text label sizes
@@ -571,3 +628,89 @@ $$
 R^2 = 1 - \frac{\text{RSS}}{\text{TSS}} = [\operatorname{Cor}(\mathbf{y}, \hat{\mathbf{y}})]^2.
 $$
 
+**Answer**
+
+$$
+\text{Recall the Pearson Correlation Coefficient formula lets us calculate the correlation between y and } \hat{y} \text{ which gives us: }
+$$
+
+$$
+\begin{align*}
+\operatorname{Cor} (\mathbf{y}, \hat{\mathbf{y}}) & =& \frac{\sum_{i=1}(x_i - \bar{x}) (y_i  - \bar{y})} 
+{\sqrt{\sum_{i=1}(x_i - \bar{x})^2 \sum_{i=1}(y_i - \bar{y})^2}} \\
+
+& =& \frac{(x - \frac{O}{n}x )^T(y - \frac{O}{n}y)}
+{\sqrt{(x - \frac{O}{n}x )^T(x - \frac{O}{n}x )(y - \frac{O}{n}y)^T(y - \frac{O}{n}y)}} \\
+
+\end{align*}
+$$
+
+$$
+\text{Let O be a matrix of "Ones", n represent the number of observations, and so O/n is a matrix of ones divided by n (mean centering matrix).}
+$$
+
+$$
+\begin{align*}
+\mathbf{O} = \mathbf{1}\mathbf{1} ^T = \begin{bmatrix} 1 & 1 & \ldots & 1 \\ 1 & 1 & \ldots & 1 \\ \vdots & \vdots & \ddots & \vdots \\ 1 & 1 & \ldots & 1 \end{bmatrix}
+
+\end{align*}
+$$
+$$
+ 
+\begin{align*}
+H=X(X^{T}X)^{-1}X^{T} &\text{ Let H be the hat matrix, which is the projection matrix onto the column space of the predictor matrix X}
+
+\end{align*}
+$$
+
+$$
+\text{ Then we can rewrite the correlation coefficient formula in terms of matrix notation.}
+$$
+
+$$
+\begin{align*}
+R^2 &= 1 - \frac{\text{RSS}}{\text{TSS}} \\ 
+
+&= 1 - \frac{\sum_{i=1}^n (y_i - \hat{y}_i)^2}{\sum_{i=1}^n (y_i - \bar{y})^2} \\
+
+&= 1 - \frac{(Y - {HY})^T(Y - {HY})}
+{(Y - \frac{O}{n}Y)^T(Y - \frac{O}{n}Y)}\\
+
+&= 1 - \frac{Y^T(I - H)^T(I - {H})Y}
+{Y^T(I- \frac{O}{n})^T(I- \frac{O}{n})Y}  &\text{ I is Identity Matrix }\\ 
+
+R^2 &= 1 - \frac{Y^T(I-H)Y}{Y^T(I-\frac{O}{n})Y}\\
+
+\end{align*}
+$$
+
+Therefore,
+$$
+[\operatorname{Cor}(Y, \hat{Y})]^2 
+= \frac{(Y - \frac{O}{n}Y )^T(\hat{Y} - \frac{O}{n}\hat{Y})}
+{\sqrt{[(Y - \frac{O}{n}Y )^T(Y - \frac{O}{n}Y )][(\hat{Y} - \frac{O}{n}\hat{Y})^T(\hat{Y} - \frac{O}{n}\hat{Y})]}} \\
+$$
+where 
+$$
+\hat{Y} = X\hat{\beta} = X(X^{T}X)^{-1}X^{T}Y = HY
+$$
+$$
+\begin{align*}
+R^2 &= 1 - \frac{Y^T(I-H)Y}{Y^T(I-\frac{O}{n})Y} \\
+
+&= \frac{(Y - \frac{O}{n}Y )^T(\hat{Y} - \frac{O}{n}\hat{Y})}
+{\sqrt{[(Y - \frac{O}{n}Y )^T(Y - \frac{O}{n}Y )][(\hat{Y} - \frac{O}{n}\hat{Y})^T(\hat{Y} - \frac{O}{n}\hat{Y})]}} \\
+
+&= \operatorname{Cor}(Y, \hat{Y})]^2 
+\end{align*}
+
+$$
+
+Therefore, 
+
+$$
+\begin{align*}
+R^2 &= 1 - \frac{\text{RSS}}{\text{TSS}} \\
+&= [\operatorname{Cor}(\mathbf{y}, \hat{\mathbf{y}})]^2. \\
+\end{align*}
+$$
