@@ -244,19 +244,6 @@ Boston <- read_csv("https://raw.githubusercontent.com/ucla-biostat-212a/2024wint
   print(width = Inf)
 ```
 
-#### Python
-
-```{python}
-import pandas as pd
-import io
-import requests
-
-url = "https://raw.githubusercontent.com/ucla-econ-425t/2023winter/master/slides/data/Boston.csv"
-s = requests.get(url).content
-Boston = pd.read_csv(io.StringIO(s.decode('utf-8')), index_col = 0)
-Boston
-```
-:::
 
 ```{r part a load dataset}
 # install.packages("ISLR2")
@@ -282,12 +269,12 @@ Boston %>% ggpairs(progress = FALSE,  #hide progress output
 ```
 
 
-Findings: Some of the variables appear to be correlated. For example, tax (full-value property-tax rate per $10,000) and rad (index of accessibility to radial highways) have a strong positive correlation coefficient of 0.91. Indus (proportion of non-retail business acres per town) and nox (nitrogen oxides concentration (parts per 10 million)) also have a high correlation coefficient of 0.764, which suggests that the increasing presence of non-retail businesses may correspond to increases in the nitrogen oxides concentration levels. Lstat (lower status of the population (percent)) and medv (median value of owner-occupied homes in 1000s of dollars) have a negative correlation, with a correlation coefficient of -0.738, which is resonable since more people with lower status would be expected to have lower median values in homes.
+Findings: Some of the variables appear to be correlated. For example, tax (full-value property-tax rate per $10,000) and rad (index of accessibility to radial highways) have a strong positive correlation coefficient of 0.91. Indus (proportion of non-retail business acres per town) and nox (nitrogen oxides concentration (parts per 10 million)) also have a high correlation coefficient of 0.764, which suggests that the increasing presence of non-retail businesses may correspond to increases in the nitrogen oxides concentration levels. Lstat (lower status of the population (percent)) and medv (median value of owner-occupied homes in 1000s of dollars) have a negative correlation of -0.738, which is reasonable since more people with lower status would be expected to have lower median values in homes.
 
-The diagonal bar graphs show that few of the variables have a normal distribtuion, such as rm(average number of rooms per dwellin) and medv(median value of owner-occupied homes in $1000s). Variables like age (proportion of owner-occupied units built prior to 1940) are skewed to the left, which implies that most of the units are old and built before 1940 and there are very few cases of units built after 1940. Other variables dis (weighted mean of distances to five Boston employment centres) and lstat (lower status of the population (percent)) are skewed to the right. We can interpret this as most units are in the lower status of the population and most units have a short average distance to nearby employment centers in Boston.
+The diagonal bar graphs show that few of the variables have a normal distribtution, such as rm(average number of rooms per dwellin) and medv(median value of owner-occupied homes in $1000s). Variables like age (proportion of owner-occupied units built prior to 1940) are skewed to the left, which implies that most of the units are old and built before 1940 and there are very few cases of units built after 1940. Other variables dis (weighted mean of distances to five Boston employment centres) and lstat (lower status of the population (percent)) are skewed to the right. We can interpret this skewedness as most units are in the lower status of the population and most units have a short average distance to nearby employment centers in Boston.
 
 ##### c.Association of Predictors with Per Capita Crime Rate
-There does seem to be an association between per capita crime rate and some of the predictor variables, though the variables with the highest association are considered moderately correlated (between 0.5 and 0.7). Most of the predictor variables are weakly correlated with per capita crime rate.
+There does appear to be an association between per capita crime rate and some of the predictor variables, though the variables with the highest association are considered moderately correlated (between 0.5 and 0.7). Most of the predictor variables are weakly correlated (<abs(0.4)) with per capita crime rate.
 
 | rad&crime = 0.626 The higher the index of accessibility to radial highways, the higher per capita crime rate by town.
 | tax&crime = 0.583 The higher the full-value property-tax rate per $10,000, the higher per capita crime rate by town.
@@ -300,23 +287,35 @@ Do the census tracts of Boston appear to have particularly high crime rates? Tax
 ```{r}
 hist(Boston$crim, main = "Distribution of Crime Rates in Boston Suburbs", xlab = "Crime Rate per Capita by Town", col = "lightblue")
 summary(Boston$crim)
+sd(Boston$crim)
+sum(Boston$crim < 10)/length(Boston$crim)
+sum(Boston$crim > 40)/length(Boston$crim)
+
 ```
-The distribution of crime rates is right-skewed, with most of the data points falling below 10. The per capita crime rate ranges from 0.00632 to 88.9762, with a median of 0.25651 and mean of 3.61352. While there are some census tracts with particularly high crime rates with the maximum being 88.97, the majority of the census tracts have low crime rates. 
+Among the population of Boston suburbs, the per capita crime rate ranges from 0.00632 to 88.9762, the mean crime rate is about 3.16352 per capita, the median crime rate is 0.25651 per capita, and the standard deviation is 8.601545. The standard deviation of 8.601545 suggests that the data points are spread out from the mean. The histogram shows that the distribution of crime rates among Boston suburbs is right-skewed, with the frequency of crime rates peaking between 0-10. While there are some census tracts with particularly high crime rates (1%), the large majority (89%) of the census tracts have low crime rates. The maximum 88.97 is about 9.92 standard deviations away from the mean ( (88.97-3.61352)/8.601545 = 9.923389) and the minimum 0.00632 is only about 0.4193665 standard deviations away from the mean. (abs(0.00632-3.61352)/8.601545 = 0.4193665) This indicates that 88.97 is an outlier and further supports that the data is right-skewed.
 
 ```{r}
 hist(Boston$tax, main = "Distribution of Property Tax Rates in Boston Suburbs", xlab = " Property Tax Rates (per $10,000)", col = "lightblue")
 summary(Boston$tax)
+sd(Boston$tax)
+sum(Boston$tax <= 400)/length(Boston$crim)
+sum(Boston$tax >= 650)/length(Boston$crim)
+sum(Boston$tax > 400 & Boston$tax < 650)/length(Boston$crim)
 ```
-The tax rate (per 10000 dollars) ranges from 187 to 711 dollars, with a median of 330 dollars and mean of 408.2 dollars. Since the mean is greater than the median, the distribution of property tax rates is right-skewed, and shows that most of the data points fall below 400 dollars. There are several census tracts with particularly high tax rates over 650 dollars, as demonstrated by the histogram and the Upper Quartile being 666 dollars. 
+Among the population of Boston suburbs, the tax rate (per 10000 dollars) ranges from 187 to 711 dollars, with a median of 330 dollars, mean of 408.2 dollars, and standard deviation of 168.5371. Since the mean is greater than the median, the distribution of property tax rates is right-skewed, and shows that 60.5% of the data points fall below 400 dollars. About 27% of the census tracts have high tax rates over 650 dollars, which is about 1.43 standard deviations above the mean ((650 - 408.2)/ 168.5371 = 1.434699). This is also demonstrated by the histogram and the Upper Quartile being 666 dollars. However, there is a big gap in property taxes between 400 and 650 (only 12.5% fall within this range), suggesting that there is a wealth disparity in the Boston suburbs.
 
 
 ```{r}
 hist(as.numeric(Boston$ptratio), main = "Distribution of Pupil-Teacher Ratio in Boston Suburbs", xlab = "Pupil-Teacher Ratio", col = "lightblue")
 summary(as.numeric(Boston$ptratio))
+sd(as.numeric(Boston$ptratio))
+sum(Boston$ptratio < 20)/length(Boston$crim)
+sum(Boston$ptratio >= 20)/length(Boston$crim)
 ```
 
-The pupil-teacher ratio ranges from 12.6 to 22, with a median of 19.05 and mean of 18.46. The mean is less than the median, so the distribution is left-skewed. The histogram shows that some of the census tracts relatively have high pupil-teacher ratios with the frequency peaking around 20.
+Among the population of Boston suburbs, the pupil-teacher ratio ranges from 12.6 to 22, with a median of 19.05, mean of 18.46 and standard deviation of 2.164946. The mean is less than the median, so the distribution is left-skewed. 39.7% of the census tracts have relatively high pupil-teacher ratios above 20, which is also depicted in the histogram as the frequency peaks between 20-21. This is about ((20-18.46) / 2.164946) = 0.71 standard deviations above the mean. This reveals disparities in class sizes and the quality of education across the different census tracts as nearly 40% of the census tracts have high pupil-teacher ratios above 20, so there is more overcrowded classrooms and less individual attention for students. 60.3% of the census tracts have low pupil-teacher ratios below 20 and are more scattered across a wider range of values between 12.6 to 20. This suggests that there is more variability in pupil-teacher ratios, class sizes, and education resources across these suburbs.
 
+```{r}
 ##### e. Census Tracts and Charles River
 ```{r}
 sum(Boston$chas == 1)
@@ -347,7 +346,14 @@ summary(Boston$rm)
 summary(Boston$age)
 summary(Boston$dis)
 summary(Boston$rad)
+summary(Boston$tax)
 summary(Boston$lstat)
+
+sd((Boston$indus))
+sd((Boston$rad))
+sd((Boston$tax))
+sd((Boston$age))
+sd((Boston$lstat))
 
 ```
 There are two census tracts with the lowest median value of 5: 399 and 406. The values of the other predictors for that census tract are outputted in the table above, with the first row representing census tract 399 and the second row corresponding to census tract 406.
@@ -356,14 +362,37 @@ The values of the other predictors for census tract 399 are: crim = 38.3518, zn 
 
 The values of the other predictors for census tract 406 are: crim = 67.9208, zn = 0, indus = 18.1, chas = 0, nox = 0.693, rm = 5.683, age = 100, dis = 1.4254, rad = 24, tax = 666, ptratio = 20.2, and lstat = 22.98. 
 
-Several of the other predictors for both census tracts have values at the upper end of the range or are the maximum values for the predictors, such as the proportion of non-retail business acres per town (indus), the index of accessibility to radial highways (rad), the full-value property-tax rate per $10,000 (tax), and the percentage of owner-occupied units built prior to 1940 (age). The percentage of the lower status of the population (lstat) is 30.59 for census tract 399 and 20.34 for census tract 406, which is at also on the higher end of the range for that predictor. Two of the predictors, zn and chas, have the lowest possible value of 0 for both census tracts.
+Several of the other predictors for both census tracts have values at the upper end of the range or are the maximum values for the predictors, such as the proportion of non-retail business acres per town (indus), the index of accessibility to radial highways (rad), the full-value property-tax rate per $10,000 (tax), and the percentage of owner-occupied units built prior to 1940 (age). 
+
+These two census tracts share some of the same values for the predictors, these are a few key takeaways for both census tracts:
+
+- The proportion of non-retail business acres per town (indus) is 18.1, which is
+- The index of accessibility to radial highways (rad) is 24, 
+- The full-value property-tax rate per $10,000 (tax) is 666,  
+- The percentage of owner-occupied units built prior to 1940 (age) is 100. 
+
+Other main takeaways are that the percentages of the lower status of the population (lstat) is 30.59 for census tract 399 and 20.34 for census tract 406, which is 2.61 and 1.08 standard deviations above the mean, respectively. Two of the predictors, zn and chas, have the lowest possible value of 0 for both census tracts.
+
+Scratchwork - How I Calculated SD:
+
+(18.1-11.14)/6.860353 = 1.01 standard deviations above the mean for indus
+(24-9.549)/8.707259 = 1.66 standard deviations above the mean for rad
+(666-408.2)/168.5371 = 1.53 standard deviations above the mean for tax
+(100-68.57)/28.14886 = 1.12 standard deviations above the mean for age
+(30.59-12.65)/7.141062 = 2.61 standard deviations above the mean for census tract 399  
+(20.34-12.65)/7.141062 = 1.08 standard deviations above the mean for census tract 406.
+
 
 ##### h. Cennsus Tracts and Rooms per Dwelling
  In this data set, how many of the census tracts average more than seven rooms per dwelling? More than eight rooms per dwelling? Comment on the census tracts that average more than eight rooms per dwelling.
 
 ```{r}
 sum(Boston$rm > 7)
+sum(Boston$rm > 7)/length(Boston$rm)
+
 sum(Boston$rm > 8)
+sum(Boston$rm > 8)/length(Boston$rm)
+
 
 more_than_eight = Boston %>% filter (Boston$rm > 8)
 more_than_eight
@@ -382,10 +411,11 @@ hist(more_than_eight$age, main = "Distribution of Proportion of Owner-Occupied U
 
 
 ```
-The number of census tracts that average more than seven rooms per dwelling is 64. 
-The number of census tracts that average more than eight rooms per dwelling is 13. 
+The number of census tracts that average more than seven rooms per dwelling is 64. This is about 12.65% of the census tracts in Boston.
 
-The census tracts that average more than eight rooms per dwelling are likely to have high median values of owner-occupied homes (medv), low proportion of residential land zoned for lots over 25,000 sq.ft (zn), and low percentages of the lower status of the population (lstat). They are also likely to low index of accessibility to radial highways (rad) and high percentages of owner-occupied units built prior to 1940 (age).
+The number of census tracts that average more than eight rooms per dwelling is 13. This is about 2.57% of the census tracts in Boston.
+
+A key takeaway is that the census tracts that average more than eight rooms per dwelling is an extremely small fraction, only 2.57%, and these tracts most likely represent the wealthiest areas. The census tracts that average more than eight rooms per dwelling are likely to have high median values (mostly 35-50 in 1000s) of owner-occupied homes (medv), low proportion (mostly 0%-20%) of residential land zoned for lots over 25,000 sq.ft (zn), and extremely low percentages (only 2-8%) of the lower status of the population (lstat). They are also likely to have a low index (mostly 0-10) of accessibility to radial highways (rad) and high percentages (60-100%) of owner-occupied units built prior to 1940 (age).
 
 ## ISL Exercise 3.7.3 (12pts)
 3. Suppose we have a data set with five predictors, X1 = GPA, X2 = IQ, X3 = Level (1 for College and 0 for High School), X4 = Interac- tion between GPA and IQ, and X5 = Interaction between GPA and Level. The response is starting salary after graduation (in thousands of dollars). Suppose we use least squares to fit the model, and get βˆ0 = 50,βˆ1 = 20,βˆ2 = 0.07,βˆ3 = 35,βˆ4 = 0.01,βˆ5 = −10.
