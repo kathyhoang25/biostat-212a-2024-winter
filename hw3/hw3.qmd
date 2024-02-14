@@ -1,0 +1,134 @@
+---
+title: "Biostat 212A Homework 3"
+subtitle: "Due Feb 20, 2024 @ 11:59PM"
+author: "Kathy Hoang and 506333118"
+date: 02/13/2024
+format:
+  html:
+    theme: cosmo
+    embed-resources: true
+    number-sections: true
+    toc: true
+    toc-depth: 4
+    toc-location: left
+    code-fold: false
+engine: knitr
+knitr:
+  opts_chunk: 
+    fig.align: 'center'
+    # fig.width: 6
+    # fig.height: 4
+    message: FALSE
+    cache: false
+---
+
+## ISL Exercise 5.4.2 (10pts)
+We will now derive the probability that a given observation is part
+of a bootstrap sample. Suppose that we obtain a bootstrap sample
+from a set of n observations.
+
+### 5.4.2.a
+What is the probability that the first bootstrap observation is
+not the jth observation from the original sample? Justify your
+answer.
+
+**Answer**
+
+### 5.4.2.b
+What is the probability that the second bootstrap observation
+is not the jth observation from the original sample?
+
+**Answer**
+
+### 5.4.2.c
+Argue that the probability that the jth observation is not in the
+bootstrap sample is (1 − (1/n))^n.
+
+**Answer**
+
+### 5.4.2.d
+When n = 5, what is the probability that the jth observation is
+in the bootstrap sample?
+
+**Answer**
+
+### 5.4.2.e
+When n = 100, what is the probability that the jth observation
+is in the bootstrap sample?
+
+**Answer**
+
+### 5.4.2.f
+When n = 10; 000, what is the probability that the jth observation
+is in the bootstrap sample?
+
+**Answer**
+
+### 5.4.2.g
+Create a plot that displays, for each integer value of n from 1
+to 100; 000, the probability that the jth observation is in the
+bootstrap sample. Comment on what you observe.
+
+**Answer**
+
+### 5.4.2.h
+We will now investigate numerically the probability that a bootstrap
+sample of size n = 100 contains the jth observation. Here
+j = 4. We repeatedly create bootstrap samples, and each time
+we record whether or not the fourth observation is contained in
+the bootstrap sample.
+
+Comment on the results obtained.
+
+```{r}
+store <- rep (NA , 10000)
+  for (i in 1:10000) {
+store [i] <- sum (sample (1:100, rep = TRUE) == 4) > 0
+}
+mean(store)
+```
+**Answer**
+
+## ISL Exercise 5.4.9 (20pts)
+We will now consider the Boston housing data set, from the ISLR2
+library.
+
+### 5.4.9.a
+Based on this data set, provide an estimate for the population
+mean of medv. Call this estimate $/hat{mu}$.
+```{r}
+
+```
+
+## Least squares is MLE (10pts)
+Show that in the case of linear model with Gaussian errors, maximum likelihood and least squares are the same thing, and $C_p$ and AIC are equivalent.
+
+$$
+
+$$
+
+## ISL Exercise 6.6.1 (10pts)
+
+## ISL Exercise 6.6.3 (10pts)
+
+## ISL Exercise 6.6.4 (10pts)
+
+## ISL Exercise 6.6.5 (10pts)
+
+## ISL Exercise 6.6.11 (30pts)
+
+You must follow the [typical machine learning paradigm](https://ucla-biostat-212a.github.io/2024winter/slides/06-modelselection/workflow_lasso.html) to compare _at least_ 3 methods: least squares, lasso, and ridge. Report final results as
+
+| Method | CV RMSE | Test RMSE |
+|:------:|:------:|:------:|:------:|
+| LS | | | |
+| Ridge | | | |
+| Lasso | | | |
+| ... | | | |
+
+## Bonus question (20pts)
+
+Consider a linear regression, fit by least squares to a set of training data $(x_1, y_1), \ldots, (x_N,  y_N)$ drawn at random from a population. Let $\hat \beta$ be the least squares estimate. Suppose we have some test data $(\tilde{x}_1, \tilde{y}_1), \ldots, (\tilde{x}_M, \tilde{y}_M)$ drawn at random from the same population as the training data. If $R_{\text{train}}(\beta) = \frac{1}{N} \sum_{i=1}^N (y_i - \beta^T x_i)^2$ and $R_{\text{test}}(\beta) = \frac{1}{M} \sum_{i=1}^M (\tilde{y}_i - \beta^T \tilde{x}_i)^2$. Show that
+$$
+\operatorname{E}[R_{\text{train}}(\hat{\beta})] < \operatorname{E}[R_{\text{test}}(\hat{\beta})].
+$$
