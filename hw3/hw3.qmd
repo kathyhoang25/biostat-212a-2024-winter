@@ -21,6 +21,11 @@ knitr:
     message: FALSE
     cache: false
 ---
+```{r}
+library(ISLR2)
+library(boot) #library for bootstrapping
+```
+
 
 ## ISL Exercise 5.4.2 (10pts)
 We will now derive the probability that a given observation is part
@@ -33,43 +38,99 @@ not the jth observation from the original sample? Justify your
 answer.
 
 **Answer**
+$$
+1 - \frac{1}{n}
+$$
+
+The probability that the first bootstrap observation is not the jth observation from the original sample is $1 - \frac{1}{n}$.
+
+The jth observation can be represented as 1/n because only 1 out of total n observations is the jth observation. Thus, it we take a total of n out of n (n/n) observations, which is equivalent to 1, and subtract the probability of the jth observation, we get 1 - (1/n). In other words, this is the probability that the first bootstrap observation is any of the n observations from the original sample except for the jth observation.
 
 ### 5.4.2.b
 What is the probability that the second bootstrap observation
 is not the jth observation from the original sample?
 
 **Answer**
+$$
+1 - \frac{1}{n}
+$$
+
+The probability that the second bootstrap observation is not the jth observation from the original sample is $1 - \frac{1}{n}$. This is the same answer as part a because it does not matter if it is the first or second bootstrap observation, the second bootstrap observation is independent of the first bootstrap observation. Thus, the probability of the jth observation is still 1/n.
 
 ### 5.4.2.c
-Argue that the probability that the jth observation is not in the
-bootstrap sample is (1 − (1/n))^n.
+Argue that the probability that the jth observation is not in the 
+bootstrap sample is $(1 - \frac{1}{n})^n $.
 
 **Answer**
+If we do not want the jth observation to be in the bootstrap sample, then each individual observation would have a probability of $1 - \frac{1}{n}$ for all of the n observations. Since the bootstrap sample is drawn with replacement and each bootstrap observation is independent of each other, we would just multiply this probability by itself n times. So for example, the first independent observation would have a probability of $1 - \frac{1}{n}$, the second independent observation would have a probability of $1 - \frac{1}{n}$, etc up to the nth independent observation. Therefore, the probability of the jth observation not being in the bootstrap sample is $(1 - \frac{1}{n})^n $.
 
 ### 5.4.2.d
 When n = 5, what is the probability that the jth observation is
 in the bootstrap sample?
 
 **Answer**
+Using the formula given in part c, we can subtract the probability that the jth observation $\textbf{is not in}$ the bootstrap sample from 1 to get the probability that the jth observation $\textbf{is in}$ the bootstrap sample: 
+$1 - (1 - \frac{1}{n})^n$. Plugging in n = 5, we can calculate :
+
+$$
+\begin{align*}
+&= 1 - (1 - \frac{1}{n})^n \\
+&= 1 - (1 - \frac{1}{5})^5 \\
+&=  1 - (\frac{4}{5})^5 \\
+&= 0.67232 \\
+\end{align*}
+$$
+The probability of the jth observation being in the bootstrap sample when n = 5 is 67.23%.
 
 ### 5.4.2.e
 When n = 100, what is the probability that the jth observation
 is in the bootstrap sample?
-
 **Answer**
+Similar to part d, we can plug in n=100 to get:
+$$
+\begin{align*}
+&= 1 - (1 - \frac{1}{n})^{n} \\
+&= 1 - (1 - \frac{1}{100})^{100} \\
+&=  1 - (\frac{99}{100})^{100} \\
+&= 0.6339677 \\
+\end{align*}
+$$
+The probability of the jth observation being in the bootstrap sample when n = 100 is about 63.4%, which is slightly less than the probability of jth observation being in the bootstrap sample when n = 5 (from part d).
 
 ### 5.4.2.f
-When n = 10; 000, what is the probability that the jth observation
+When n = 10000, what is the probability that the jth observation
 is in the bootstrap sample?
 
 **Answer**
+We can plug in n= 10000 to get:
+$$
+\begin{align*}
+&= 1 - (1 - \frac{1}{n})^{n} \\
+&= 1 - (1 - \frac{1}{10000})^{10000} \\
+&=  1 - (\frac{9999}{10000})^{10000} \\
+&= 0.632139 \\
+\end{align*}
+$$
+The probability of the jth observation being in the bootstrap sample when n = 10000 is approximately 63.21%.
 
 ### 5.4.2.g
 Create a plot that displays, for each integer value of n from 1
-to 100; 000, the probability that the jth observation is in the
+to 100000, the probability that the jth observation is in the
 bootstrap sample. Comment on what you observe.
 
 **Answer**
+```{r}
+prob_jth_in_fn <- function(n) {
+  return(1 - (1 - 1/n)^n)
+}
+x <- 1:100000
+y <- sapply(x, prob_jth_in_fn)
+
+plot(x, y,type = "o", xlab = "n", ylab = "Probability", main = "Probability of jth Observation in Bootstrap Sample")
+```
+The plot shows that as n increases, the probability that the jth observation is in the bootstrap sample converges to approximately 63.21%. This is consistent with the results shown in the previous problems because when n is large, we observed the probability to continually approach closer to 63.21%. 
+
+Note: 1 - (99999/100000)**100000 = 0.6321224
 
 ### 5.4.2.h
 We will now investigate numerically the probability that a bootstrap
@@ -89,16 +150,124 @@ mean(store)
 ```
 **Answer**
 
+The probability that a bootstrap sample of size n = 100 contains the jth observation (j = 4) is 0.6345. In part e, we calculated the probability of the jth observation being in the bootstrap sample when n = 100 to be 0.6339677. These numbers are extremely close to each other as they only differ by 0.0005323 (0.6345-0.6339677 = 0.0005323). This suggests that the probability estimated with the bootstrap sampling method is consistent with the theoretical probability and that this resampling method is a good approximation of the true probability.
+
 ## ISL Exercise 5.4.9 (20pts)
 We will now consider the Boston housing data set, from the ISLR2
 library.
 
 ### 5.4.9.a
 Based on this data set, provide an estimate for the population
-mean of medv. Call this estimate $/hat{mu}$.
+mean of medv. Call this estimate $\hat{\mu}$.
+
+**Answer**
 ```{r}
+df = Boston
+mu_hat = mean(df$medv)
+mu_hat
+```
+The estimation for the population mean of medv, $\hat{\mu}$, is 22.53281.
+
+### 5.4.9.b
+Provide an estimate of the standard error of $\hat{\mu}$. Interpret this
+result.
+
+Hint: We can compute the standard error of the sample mean by
+dividing the sample standard deviation by the square root of the
+number of observations.
+
+**Answer**
+```{r}
+se_mu_hat = sd(df$medv)/sqrt(length(df$medv))
+se_mu_hat
+```
+The standard error of the sample mean is 0.4088611. This means that the sample mean is expected to vary from the true population mean by approximately 0.4088611 units on average due to random sampling variability.
+
+### 5.4.9.c
+Now estimate the standard error of $\hat{\mu}$ using the bootstrap. How
+does this compare to your answer from (b)?
+
+**Answer**
+```{r}
+set.seed(212)
+boot_fn_mean <- function(data, index) return(mean(data[index])) 
+# function to compute the mean of the bootstrap sample
+#takes in 2 arguments, index of the bootstrap sample and data
+
+bs <- boot(df$medv, boot_fn_mean, 1000) # 1000 bootstrap samples
+bs
+```
+The standard error using the bootstrap method is about 0.39. This is close to the standard error computed from part (b) 0.4088611, as it is only about 0.015 different. This is expected as the standard error of the sample mean via the traditional method (computed using sample statistics) is expected to be close to the standard error of the bootstrap method (which simulates the sampling process through resampling).
+
+### 5.4.9.d
+Based on your bootstrap estimate from (c), provide a 95% confidence interval for the mean of medv. Compare it to the results obtained using t.test(Boston$medv). Hint: You can approximate a 95% confidence interval using the
+formula $[\hat{\mu} - 2SE(\hat{\mu}),\hat{\mu} + 2SE(\hat{\mu})]$
+
+**Answer**
+```{r}
+se_mu_hat <- sd(bs$t) #SE from part c
+se_mu_hat
+ci = c(mu_hat - 2*se_mu_hat, mu_hat + 2*se_mu_hat)
+ci
+
+t.test(Boston$medv)
 
 ```
+The 95% Confidence Interval for the mean of medv is [21.74527, 23.32034]. This is very close to the results obtained using t.test(Boston$medv) which is [21.72953, 23.33608]. The difference is only about 0.01574 away as 21.74527-21.72953 = 0.01574 and 23.32034-23.33608 = 0.01574.
+
+### 5.4.9.e
+Based on this data set, provide an estimate, $\hat{\mu}_{med}$, for the median
+value of medv in the population.
+
+**Answer**
+```{r}
+mu_hat_med = median(df$medv)
+mu_hat_med
+```
+The estimation for the median value of medv in the population, $\hat{\mu}_{med}$, is 21.2.
+
+### 5.4.9.f
+We now would like to estimate the standard error of  $\hat{\mu}_{med}$. Unfortunately,
+there is no simple formula for computing the standard
+error of the median. Instead, estimate the standard error of the 
+median using the bootstrap. Comment on your findings.
+
+**Answer**
+```{r}
+set.seed(212)
+boot_med_fn <- function(data, index) return(median(data[index])) #use median
+bs_med <- boot(df$medv, boot_med_fn, 1000) # 1000 bootstrap samples
+bs_med
+se_mu_hat_med <- sd(bs_med$t) #SE from part f
+se_mu_hat_med
+```
+
+The standard error using the bootstrap method is about 0.3707078. This is relatively small as the median value is 21.2 This standard error of the median is also slightly smaller compared to the standard error of the sample mean using the boostrap method (from part c) which is 0.3937688. This could be because the median is more robust to outliers and less affected by the skewedness of the data compared to the mean.
+
+### 5.4.9.g
+Based on this data set, provide an estimate for the tenth percentile
+of medv in Boston census tracts. Call this quantity $\hat{\mu}_{0.1}$.
+(You can use the quantile() function.)
+
+**Answer**
+```{r}
+mu_hat_tenth_perc = quantile(df$medv, 0.1)
+mu_hat_tenth_perc
+```
+
+### 5.4.9.h
+Use the bootstrap to estimate the standard error of $\hat{\mu}_{0.1}$. Comment
+on your findings.
+
+**Answer**
+```{r}
+set.seed(212)
+boot_fn_tenth <- function(data, index) return(quantile(data[index], 0.1)) #quantile
+#use 10th percentile
+bs_tenth_perc <- boot(df$medv, boot_fn_tenth, 1000) # 1000 bootstrap samples
+bs_tenth_perc
+```
+The standard error of $\hat{\mu}_{0.1}$ using the bootstrap method is about 0.4921582. This standard error of the 10th percentile is larger compared to the standard error of the median using the bootstrap method (from part f) which is 0.3707078. This comes to be a difference of 0.12 between the standard errors. This could be because the 10th percentile is more sensitive to the lower end of the data and is more affected by the skewedness of the data compared to the median. Regardless, the standard error of the 10th percentile is still relatively small compared to the 10th percentile value of 12.75.
 
 ## Least squares is MLE (10pts)
 Show that in the case of linear model with Gaussian errors, maximum likelihood and least squares are the same thing, and $C_p$ and AIC are equivalent.
@@ -108,6 +277,60 @@ $$
 $$
 
 ## ISL Exercise 6.6.1 (10pts)
+We perform best subset, forward stepwise, and backward stepwise
+selection on a single data set. For each approach, we obtain p + 1
+models, containing 0; 1; 2; : : : ; p predictors. Explain your answers:
+(a) Which of the three models with k predictors has the smallest
+training RSS?
+
+**Answer**
+```{r}
+
+```
+
+(b) Which of the three models with k predictors has the smallest
+test RSS?
+
+**Answer**
+```{r}
+
+```
+
+(c) True or False:
+i. The predictors in the k-variable model identi ed by forward
+stepwise are a subset of the predictors in the (k+1)-variable
+model identi ed by forward stepwise selection.
+
+**Answer**
+
+```{r}
+
+```
+
+ii. The predictors in the k-variable model identi ed by backward
+stepwise are a subset of the predictors in the (k + 1)-
+variable model identi ed by backward stepwise selection.
+
+**Answer**
+
+```{r}
+
+```
+iii. The predictors in the k-variable model identi ed by backward
+stepwise are a subset of the predictors in the (k + 1)-
+variable model identi ed by forward stepwise selection.
+
+**Answer**
+iv. The predictors in the k-variable model identi ed by forward
+stepwise are a subset of the predictors in the (k+1)-variable
+model identi ed by backward stepwise selection.
+
+**Answer**
+v. The predictors in the k-variable model identi ed by best
+subset are a subset of the predictors in the (k + 1)-variable
+model identi ed by best subset selection.
+
+**Answer**
 
 ## ISL Exercise 6.6.3 (10pts)
 

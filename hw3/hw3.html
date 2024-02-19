@@ -3230,6 +3230,13 @@ window.Quarto = {
   <li><a href="#isl-exercise-5.4.9-20pts" id="toc-isl-exercise-5.4.9-20pts" class="nav-link" data-scroll-target="#isl-exercise-5.4.9-20pts"><span class="header-section-number">2</span> ISL Exercise 5.4.9 (20pts)</a>
   <ul>
   <li><a href="#a-1" id="toc-a-1" class="nav-link" data-scroll-target="#a-1"><span class="header-section-number">2.1</span> 5.4.9.a</a></li>
+  <li><a href="#b-1" id="toc-b-1" class="nav-link" data-scroll-target="#b-1"><span class="header-section-number">2.2</span> 5.4.9.b</a></li>
+  <li><a href="#c-1" id="toc-c-1" class="nav-link" data-scroll-target="#c-1"><span class="header-section-number">2.3</span> 5.4.9.c</a></li>
+  <li><a href="#d-1" id="toc-d-1" class="nav-link" data-scroll-target="#d-1"><span class="header-section-number">2.4</span> 5.4.9.d</a></li>
+  <li><a href="#e-1" id="toc-e-1" class="nav-link" data-scroll-target="#e-1"><span class="header-section-number">2.5</span> 5.4.9.e</a></li>
+  <li><a href="#f-1" id="toc-f-1" class="nav-link" data-scroll-target="#f-1"><span class="header-section-number">2.6</span> 5.4.9.f</a></li>
+  <li><a href="#g-1" id="toc-g-1" class="nav-link" data-scroll-target="#g-1"><span class="header-section-number">2.7</span> 5.4.9.g</a></li>
+  <li><a href="#h-1" id="toc-h-1" class="nav-link" data-scroll-target="#h-1"><span class="header-section-number">2.8</span> 5.4.9.h</a></li>
   </ul></li>
   <li><a href="#least-squares-is-mle-10pts" id="toc-least-squares-is-mle-10pts" class="nav-link" data-scroll-target="#least-squares-is-mle-10pts"><span class="header-section-number">3</span> Least squares is MLE (10pts)</a></li>
   <li><a href="#isl-exercise-6.6.1-10pts" id="toc-isl-exercise-6.6.1-10pts" class="nav-link" data-scroll-target="#isl-exercise-6.6.1-10pts"><span class="header-section-number">4</span> ISL Exercise 6.6.1 (10pts)</a></li>
@@ -3277,28 +3284,39 @@ window.Quarto = {
 </header>
 
 
+<div class="cell" data-layout-align="center">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ISLR2)</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(boot) <span class="co">#library for bootstrapping</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
 <section id="isl-exercise-5.4.2-10pts" class="level2" data-number="1">
 <h2 data-number="1" class="anchored" data-anchor-id="isl-exercise-5.4.2-10pts"><span class="header-section-number">1</span> ISL Exercise 5.4.2 (10pts)</h2>
 <p>We will now derive the probability that a given observation is part of a bootstrap sample. Suppose that we obtain a bootstrap sample from a set of n observations.</p>
 <section id="a" class="level3" data-number="1.1">
 <h3 data-number="1.1" class="anchored" data-anchor-id="a"><span class="header-section-number">1.1</span> 5.4.2.a</h3>
 <p>What is the probability that the first bootstrap observation is not the jth observation from the original sample? Justify your answer.</p>
-<p><strong>Answer</strong></p>
+<p><strong>Answer</strong> <span class="math display">\[
+1 - \frac{1}{n}
+\]</span></p>
+<p>The probability that the first bootstrap observation is not the jth observation from the original sample is <span class="math inline">\(1 - \frac{1}{n}\)</span>.</p>
+<p>The jth observation can be represented as 1/n because only 1 out of total n observations is the jth observation. Thus, it we take a total of n out of n (n/n) observations, which is equivalent to 1, and subtract the probability of the jth observation, we get 1 - (1/n). In other words, this is the probability that the first bootstrap observation is any of the n observations from the original sample except for the jth observation.</p>
 </section>
 <section id="b" class="level3" data-number="1.2">
 <h3 data-number="1.2" class="anchored" data-anchor-id="b"><span class="header-section-number">1.2</span> 5.4.2.b</h3>
 <p>What is the probability that the second bootstrap observation is not the jth observation from the original sample?</p>
-<p><strong>Answer</strong></p>
+<p><strong>Answer</strong> <span class="math display">\[
+1 - \frac{1}{n}
+\]</span></p>
+<p>The probability that the second bootstrap observation is not the jth observation from the original sample is <span class="math inline">\(1 - \frac{1}{n}\)</span>. This is the same answer as part a because it does not matter if it is the first or second bootstrap observation, the second bootstrap observation is independent of the first bootstrap observation. Thus, the probability of the jth observation is still 1/n.</p>
 </section>
 <section id="c" class="level3" data-number="1.3">
 <h3 data-number="1.3" class="anchored" data-anchor-id="c"><span class="header-section-number">1.3</span> 5.4.2.c</h3>
-<p>Argue that the probability that the jth observation is not in the bootstrap sample is (1 − (1/n))^n.</p>
-<p><strong>Answer</strong></p>
+<p>Argue that the probability that the jth observation is not in the bootstrap sample is $(1 - )^n $.</p>
+<p><strong>Answer</strong> If we do not want the jth observation to be in the bootstrap sample, then each individual observation would have a probability of <span class="math inline">\(1 - \frac{1}{n}\)</span> for all of the n observations. Since the bootstrap sample is drawn with replacement and each bootstrap observation is independent of each other, we would just multiply this probability by itself n times. So for example, the first independent observation would have a probability of <span class="math inline">\(1 - \frac{1}{n}\)</span>, the second independent observation would have a probability of <span class="math inline">\(1 - \frac{1}{n}\)</span>, etc up to the nth independent observation. Therefore, the probability of the jth observation not being in the bootstrap sample is $(1 - )^n $.</p>
 </section>
 <section id="d" class="level3" data-number="1.4">
 <h3 data-number="1.4" class="anchored" data-anchor-id="d"><span class="header-section-number">1.4</span> 5.4.2.d</h3>
 <p>When n = 5, what is the probability that the jth observation is in the bootstrap sample?</p>
-<p><strong>Answer</strong></p>
+<p><strong>Answer</strong> Using the formula given in part c, we can subtract the probability that the jth observation <span class="math inline">\(\textbf{is not in}\)</span> the bootstrap sample from 1 to get the probability that the jth observation <span class="math inline">\(\textbf{is in}\)</span> the bootstrap sample. <span class="math inline">\((1 - \frac{1}{n})^n\)</span></p>
 </section>
 <section id="e" class="level3" data-number="1.5">
 <h3 data-number="1.5" class="anchored" data-anchor-id="e"><span class="header-section-number">1.5</span> 5.4.2.e</h3>
@@ -3320,13 +3338,13 @@ window.Quarto = {
 <p>We will now investigate numerically the probability that a bootstrap sample of size n = 100 contains the jth observation. Here j = 4. We repeatedly create bootstrap samples, and each time we record whether or not the fourth observation is contained in the bootstrap sample.</p>
 <p>Comment on the results obtained.</p>
 <div class="cell" data-layout-align="center">
-<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>store <span class="ot">&lt;-</span> <span class="fu">rep</span> (<span class="cn">NA</span> , <span class="dv">10000</span>)</span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">10000</span>) {</span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>store [i] <span class="ot">&lt;-</span> <span class="fu">sum</span> (<span class="fu">sample</span> (<span class="dv">1</span><span class="sc">:</span><span class="dv">100</span>, <span class="at">rep =</span> <span class="cn">TRUE</span>) <span class="sc">==</span> <span class="dv">4</span>) <span class="sc">&gt;</span> <span class="dv">0</span></span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="fu">mean</span>(store)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>store <span class="ot">&lt;-</span> <span class="fu">rep</span> (<span class="cn">NA</span> , <span class="dv">10000</span>)</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">10000</span>) {</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>store [i] <span class="ot">&lt;-</span> <span class="fu">sum</span> (<span class="fu">sample</span> (<span class="dv">1</span><span class="sc">:</span><span class="dv">100</span>, <span class="at">rep =</span> <span class="cn">TRUE</span>) <span class="sc">==</span> <span class="dv">4</span>) <span class="sc">&gt;</span> <span class="dv">0</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="fu">mean</span>(store)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>[1] 0.6395</code></pre>
+<pre><code>[1] 0.6305</code></pre>
 </div>
 </div>
 <p><strong>Answer</strong></p>
@@ -3337,7 +3355,173 @@ window.Quarto = {
 <p>We will now consider the Boston housing data set, from the ISLR2 library.</p>
 <section id="a-1" class="level3" data-number="2.1">
 <h3 data-number="2.1" class="anchored" data-anchor-id="a-1"><span class="header-section-number">2.1</span> 5.4.9.a</h3>
-<p>Based on this data set, provide an estimate for the population mean of medv. Call this estimate <span class="math inline">\(/hat{mu}\)</span>.</p>
+<p>Based on this data set, provide an estimate for the population mean of medv. Call this estimate <span class="math inline">\(\hat{\mu}\)</span>.</p>
+<p><strong>Answer</strong></p>
+<div class="cell" data-layout-align="center">
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>df <span class="ot">=</span> Boston</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>mu_hat <span class="ot">=</span> <span class="fu">mean</span>(df<span class="sc">$</span>medv)</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>mu_hat</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 22.53281</code></pre>
+</div>
+</div>
+<p>The estimation for the population mean of medv, <span class="math inline">\(\hat{\mu}\)</span>, is 22.53281.</p>
+</section>
+<section id="b-1" class="level3" data-number="2.2">
+<h3 data-number="2.2" class="anchored" data-anchor-id="b-1"><span class="header-section-number">2.2</span> 5.4.9.b</h3>
+<p>Provide an estimate of the standard error of <span class="math inline">\(\hat{\mu}\)</span>. Interpret this result.</p>
+<p>Hint: We can compute the standard error of the sample mean by dividing the sample standard deviation by the square root of the number of observations.</p>
+<p><strong>Answer</strong></p>
+<div class="cell" data-layout-align="center">
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>se_mu_hat <span class="ot">=</span> <span class="fu">sd</span>(df<span class="sc">$</span>medv)<span class="sc">/</span><span class="fu">sqrt</span>(<span class="fu">length</span>(df<span class="sc">$</span>medv))</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>se_mu_hat</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 0.4088611</code></pre>
+</div>
+</div>
+<p>The standard error of the sample mean is 0.4088611. This means that the sample mean is expected to vary from the true population mean by approximately 0.4088611 units on average due to random sampling variability.</p>
+</section>
+<section id="c-1" class="level3" data-number="2.3">
+<h3 data-number="2.3" class="anchored" data-anchor-id="c-1"><span class="header-section-number">2.3</span> 5.4.9.c</h3>
+<p>Now estimate the standard error of <span class="math inline">\(\hat{\mu}\)</span> using the bootstrap. How does this compare to your answer from (b)?</p>
+<p><strong>Answer</strong></p>
+<div class="cell" data-layout-align="center">
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">212</span>)</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>boot_fn_mean <span class="ot">&lt;-</span> <span class="cf">function</span>(data, index) <span class="fu">return</span>(<span class="fu">mean</span>(data[index])) </span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="co"># function to compute the mean of the bootstrap sample</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="co">#takes in 2 arguments, index of the bootstrap sample and data</span></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>bs <span class="ot">&lt;-</span> <span class="fu">boot</span>(df<span class="sc">$</span>medv, boot_fn_mean, <span class="dv">1000</span>) <span class="co"># 1000 bootstrap samples</span></span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>bs</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+ORDINARY NONPARAMETRIC BOOTSTRAP
+
+
+Call:
+boot(data = df$medv, statistic = boot_fn_mean, R = 1000)
+
+
+Bootstrap Statistics :
+    original      bias    std. error
+t1* 22.53281 0.002264427   0.3937688</code></pre>
+</div>
+</div>
+<p>The standard error using the bootstrap method is about 0.39. This is close to the standard error computed from part (b) 0.4088611, as it is only about 0.015 different. This is expected as the standard error of the sample mean via the traditional method (computed using sample statistics) is expected to be close to the standard error of the bootstrap method (which simulates the sampling process through resampling).</p>
+</section>
+<section id="d-1" class="level3" data-number="2.4">
+<h3 data-number="2.4" class="anchored" data-anchor-id="d-1"><span class="header-section-number">2.4</span> 5.4.9.d</h3>
+<p>Based on your bootstrap estimate from (c), provide a 95% confidence interval for the mean of medv. Compare it to the results obtained using t.test(Boston$medv). Hint: You can approximate a 95% confidence interval using the formula <span class="math inline">\([\hat{\mu} - 2SE(\hat{\mu}),\hat{\mu} + 2SE(\hat{\mu})]\)</span></p>
+<p><strong>Answer</strong></p>
+<div class="cell" data-layout-align="center">
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>se_mu_hat <span class="ot">&lt;-</span> <span class="fu">sd</span>(bs<span class="sc">$</span>t) <span class="co">#SE from part c</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>se_mu_hat</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 0.3937688</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>ci <span class="ot">=</span> <span class="fu">c</span>(mu_hat <span class="sc">-</span> <span class="dv">2</span><span class="sc">*</span>se_mu_hat, mu_hat <span class="sc">+</span> <span class="dv">2</span><span class="sc">*</span>se_mu_hat)</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>ci</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 21.74527 23.32034</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="fu">t.test</span>(Boston<span class="sc">$</span>medv)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+    One Sample t-test
+
+data:  Boston$medv
+t = 55.111, df = 505, p-value &lt; 2.2e-16
+alternative hypothesis: true mean is not equal to 0
+95 percent confidence interval:
+ 21.72953 23.33608
+sample estimates:
+mean of x 
+ 22.53281 </code></pre>
+</div>
+</div>
+<p>The 95% Confidence Interval for the mean of medv is [21.74527, 23.32034]. This is very close to the results obtained using t.test(Boston$medv) which is [21.72953, 23.33608]. The difference is only about 0.01574 away as 21.74527-21.72953 = 0.01574 and 23.32034-23.33608 = 0.01574.</p>
+</section>
+<section id="e-1" class="level3" data-number="2.5">
+<h3 data-number="2.5" class="anchored" data-anchor-id="e-1"><span class="header-section-number">2.5</span> 5.4.9.e</h3>
+<p>Based on this data set, provide an estimate, <span class="math inline">\(\hat{\mu}_{med}\)</span>, for the median value of medv in the population.</p>
+<p><strong>Answer</strong></p>
+<div class="cell" data-layout-align="center">
+<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>mu_hat_med <span class="ot">=</span> <span class="fu">median</span>(df<span class="sc">$</span>medv)</span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>mu_hat_med</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 21.2</code></pre>
+</div>
+</div>
+<p>The estimation for the median value of medv in the population, <span class="math inline">\(\hat{\mu}_{med}\)</span>, is 21.2.</p>
+</section>
+<section id="f-1" class="level3" data-number="2.6">
+<h3 data-number="2.6" class="anchored" data-anchor-id="f-1"><span class="header-section-number">2.6</span> 5.4.9.f</h3>
+<p>We now would like to estimate the standard error of <span class="math inline">\(\hat{\mu}_{med}\)</span>. Unfortunately, there is no simple formula for computing the standard error of the median. Instead, estimate the standard error of the median using the bootstrap. Comment on your findings.</p>
+<p><strong>Answer</strong></p>
+<div class="cell" data-layout-align="center">
+<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">212</span>)</span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>boot_med_fn <span class="ot">&lt;-</span> <span class="cf">function</span>(data, index) <span class="fu">return</span>(<span class="fu">median</span>(data[index])) <span class="co">#use median</span></span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>bs_med <span class="ot">&lt;-</span> <span class="fu">boot</span>(df<span class="sc">$</span>medv, boot_med_fn, <span class="dv">1000</span>) <span class="co"># 1000 bootstrap samples</span></span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>bs_med</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+ORDINARY NONPARAMETRIC BOOTSTRAP
+
+
+Call:
+boot(data = df$medv, statistic = boot_med_fn, R = 1000)
+
+
+Bootstrap Statistics :
+    original   bias    std. error
+t1*     21.2 -0.01535   0.3707078</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a>se_mu_hat_med <span class="ot">&lt;-</span> <span class="fu">sd</span>(bs_med<span class="sc">$</span>t) <span class="co">#SE from part f</span></span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>se_mu_hat_med</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 0.3707078</code></pre>
+</div>
+</div>
+<p>The standard error using the bootstrap method is about 0.3707078. This is relatively small as the median value is 21.2 This standard error of the median is also slightly smaller compared to the standard error of the sample mean using the boostrap method (from part c) which is 0.3937688. This could be because the median is more robust to outliers and less affected by the skewedness of the data compared to the mean.</p>
+</section>
+<section id="g-1" class="level3" data-number="2.7">
+<h3 data-number="2.7" class="anchored" data-anchor-id="g-1"><span class="header-section-number">2.7</span> 5.4.9.g</h3>
+<p>Based on this data set, provide an estimate for the tenth percentile of medv in Boston census tracts. Call this quantity <span class="math inline">\(\hat{\mu}_{0.1}\)</span>. (You can use the quantile() function.)</p>
+<p><strong>Answer</strong></p>
+<div class="cell" data-layout-align="center">
+<div class="sourceCode cell-code" id="cb22"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a>mu_hat_tenth_perc <span class="ot">=</span> <span class="fu">quantile</span>(df<span class="sc">$</span>medv, <span class="fl">0.1</span>)</span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a>mu_hat_tenth_perc</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>  10% 
+12.75 </code></pre>
+</div>
+</div>
+</section>
+<section id="h-1" class="level3" data-number="2.8">
+<h3 data-number="2.8" class="anchored" data-anchor-id="h-1"><span class="header-section-number">2.8</span> 5.4.9.h</h3>
+<p>Use the bootstrap to estimate the standard error of <span class="math inline">\(\hat{\mu}_{0.1}\)</span>. Comment on your findings.</p>
+<p><strong>Answer</strong></p>
+<div class="cell" data-layout-align="center">
+<div class="sourceCode cell-code" id="cb24"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">212</span>)</span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a>boot_fn_tenth <span class="ot">&lt;-</span> <span class="cf">function</span>(data, index) <span class="fu">return</span>(<span class="fu">quantile</span>(data[index], <span class="fl">0.1</span>)) <span class="co">#quantile</span></span>
+<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a><span class="co">#use 10th percentile</span></span>
+<span id="cb24-4"><a href="#cb24-4" aria-hidden="true" tabindex="-1"></a>bs_tenth_perc <span class="ot">&lt;-</span> <span class="fu">boot</span>(df<span class="sc">$</span>medv, boot_fn_tenth, <span class="dv">1000</span>) <span class="co"># 1000 bootstrap samples</span></span>
+<span id="cb24-5"><a href="#cb24-5" aria-hidden="true" tabindex="-1"></a>bs_tenth_perc</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+ORDINARY NONPARAMETRIC BOOTSTRAP
+
+
+Call:
+boot(data = df$medv, statistic = boot_fn_tenth, R = 1000)
+
+
+Bootstrap Statistics :
+    original  bias    std. error
+t1*    12.75 0.02975   0.4921582</code></pre>
+</div>
+</div>
+<p>The standard error of <span class="math inline">\(\hat{\mu}_{0.1}\)</span> using the bootstrap method is about 0.4921582. This standard error of the 10th percentile is larger compared to the standard error of the median using the bootstrap method (from part f) which is 0.3707078. This comes to be a difference of 0.12 between the standard errors. This could be because the 10th percentile is more sensitive to the lower end of the data and is more affected by the skewedness of the data compared to the median. Regardless, the standard error of the 10th percentile is still relatively small compared to the 10th percentile value of 12.75.</p>
 </section>
 </section>
 <section id="least-squares-is-mle-10pts" class="level2" data-number="3">
