@@ -279,66 +279,312 @@ $$
 ## ISL Exercise 6.6.1 (10pts)
 We perform best subset, forward stepwise, and backward stepwise
 selection on a single data set. For each approach, we obtain p + 1
-models, containing 0; 1; 2; : : : ; p predictors. Explain your answers:
-(a) Which of the three models with k predictors has the smallest
-training RSS?
+models, containing 0,1,2,...,p predictors. Explain your answers:
+
+### 6.6.1.a 
+Which of the three models with k predictors has the smallest training RSS?
 
 **Answer**
-```{r}
 
-```
+Out of the three models, the best subset selection model with k predictors has the smallest training RSS. Subset selection evaluates all the $p \choose k$ possible combinations of predictors for each k and selects the model with the smallest training RSS. However, for forward and backward stepwise selection, the order which the predictors are added or removed is based on the smallest training RSS at each step. While these models aim to converge to the best model with the lowest RSS, the path they take is not exhaustive of all possible combinations of predictors so it is not guaranteed that the model with k predictors has the smallest training RSS.
 
-(b) Which of the three models with k predictors has the smallest
+Source: ISL pg. 227, 232: "As we discussed in Section 6.1.1, the model containing ALL of the predictors will always have the smallest RSS and the largest R2, since these quantities are related to the training error"
+
+### 6.6.1.b
+Which of the three models with k predictors has the smallest
 test RSS?
 
 **Answer**
-```{r}
 
-```
+As we learned in Chapter 2, training error is a poor estimate of the test error. RSS and R^2 are not suitable for selecting the best model with respect to test error as they are metrics used to evaluate the performance of models on training data, not unseen test data. Therefore, we will not be able to determine which of the three models with k predictors has the smallest test RSS without evaluating the test RSS for each model. However, since best subset selection evaluates all the possible models, there is a higher chance that it may have the smallest test RSS for the model, though it is not guaranteed. 
 
-(c) True or False:
-i. The predictors in the k-variable model identi ed by forward
-stepwise are a subset of the predictors in the (k+1)-variable
-model identi ed by forward stepwise selection.
+Source: ISL pg. 232
 
-**Answer**
+### 6.6.1.c
+True or False:
 
-```{r}
+#### i. 
 
-```
+The predictors in the k-variable model identified by forward stepwise are a subset of the predictors in the (k+1)-variable model identified by forward stepwise selection.
 
-ii. The predictors in the k-variable model identi ed by backward
-stepwise are a subset of the predictors in the (k + 1)-
-variable model identi ed by backward stepwise selection.
+**Answer: True**
+This is true because forward stepwise selection adds a predictor every iteration, so the (k+1)-variable model will contain the k-variable model and an additional predictor. Thus, the k-variable model is a subset of the (k+1)-variable model.
 
-**Answer**
+#### ii: 
 
-```{r}
+The predictors in the k-variable model identified by backward stepwise are a subset of the predictors in the (k + 1)-variable model identified by backward stepwise selection.
 
-```
-iii. The predictors in the k-variable model identi ed by backward
-stepwise are a subset of the predictors in the (k + 1)-
-variable model identi ed by forward stepwise selection.
+**Answer: True.**
+This is true because backward stepwise selection starts with all the predictors and removes a predictor every iteration, so the k-variable model will contain all predictors from the (k+1)-variable model minus one predictor. Thus, the k-variable model is still a subset of the (k+1)-variable model.
 
-**Answer**
-iv. The predictors in the k-variable model identi ed by forward
-stepwise are a subset of the predictors in the (k+1)-variable
-model identi ed by backward stepwise selection.
+#### iii: 
 
-**Answer**
-v. The predictors in the k-variable model identi ed by best
-subset are a subset of the predictors in the (k + 1)-variable
-model identi ed by best subset selection.
+The predictors in the k-variable model identified by backward stepwise are a subset of the predictors in the (k + 1)-
+variable model identified by forward stepwise selection.
 
-**Answer**
+**Answer: False.**
+This is false because forward stepwise selection and backward stepwise selection may not necessarily result in the same model. It is possible for the k-variable model identified by backward stepwise to have a different set of predictors than the (k+1)-variable model identified by forward stepwise selection as there are different combinations/paths they can take. For example, even after removing a few predictors, the resulting k-variable model identified by backward stepwise selection could still have more predictors that the (k+1)-variable model identified by forward stepwise selection did not add.Thus, the predictors in the k-variable model identified by backward stepwise selection is not guranteed to be a subset of the predictors in the (k+1)-variable model identified by forward stepwise selection.
+
+#### iv: 
+
+The predictors in the k-variable model identified by forward stepwise are a subset of the predictors in the (k+1)-variable model identified by backward stepwise selection.
+
+**Answer: False.**
+As mentioned in part iii, forward stepwise selection and backward stepwise selection may not necessarily result in the same model. For example, the k-variable model identified by forward stepwise selection may add on more predictors that the (k+1)-variable model identified by backward stepwise selection already removed. Thus, the predictors in the k-variable model identified by forward stepwise selection is not guranteed to be a subset of the predictors in the (k+1)-variable model identified by backward stepwise selection.
+
+#### v:
+The predictors in the k-variable model identified by best subset are a subset of the predictors in the (k + 1)-variable model identified by best subset selection.
+
+**Answer:  False**
+
+This is false because best subset selection evaluates all the possible models and selects the best model for each k. The (k+1) variable model may not necessarily contain all the predictors selected for the k-variable model. Therefore, the k-variable model identified by best subset selection is not guaranteed to be a subset of the predictors in the (k+1)-variable model identified by best subset selection.
 
 ## ISL Exercise 6.6.3 (10pts)
+Suppose we estimate the regression coefficients in a linear regression
+model by minimizing for a particular value of s. For parts (a) through (e), indicate which
+of i. through v. is correct. Justify your answer.
+
+$$
+\begin{align*}
+\sum_{i=1}^n (y_i - \beta_0 - \sum_{j=1}^p \beta_j x_{ij})^2 \text{ subject to } \sum_{j=1}^p \mid \beta_j \mid \le s
+\end{align*}
+$$
+Options: 
+
+#### i. 
+Increase initially, and then eventually start decreasing in an inverted U shape.
+
+#### ii. 
+Decrease initially, and then eventually start increasing in a U shape.
+
+#### iii. 
+Steadily increase.
+
+#### iv. 
+Steadily decrease.
+
+#### v. 
+Remain constant.
+
+Note: Refer back to sketch in hw1
+
+
+### 6.6.3.a 
+As we increase s from 0, the training RSS will:
+
+**Answer: iv. Steadily decrease** As s increases from 0, the constraint becomes less restrictive, and the sum of absolute values of the coefficients can be higher. As a result, the model will be able to fit the training data better and be more flexible, so the training RSS will steadily decrease. 
+
+### 6.6.3.b
+Repeat (a) for test RSS.
+
+**Answer: ii. Decrease initially, and then eventually start increasing in a U shape.** When s=0, all B_j = 0, so the model is too simple and the test RSS is high. As s increases from 0, B_j will take on non-zero values and the model will be able to fit on test data better and be more flexible, so the test RSS will decrease at first. However, as s continues to increase, the model will become too flexible and overfit the training data, so the test RSS will eventually start increasing in a U shape. This is because the model will start to fit the noise in the training data and not generalize well to the test data. 
+
+### 6.6.3.c
+Repeat (a) for variance.
+
+**Answer: iii. Steadily increase.** As s increases from 0, the model will be able to fit the training data better and be more flexible, so the variance will steadily increase. Recall from hw1 that as flexibility increases, variance will also increase because the model is more sensitive to fluctuations in the training set. In general, more flexible statistical methods have higher variance. 
+
+### 6.6.3.d
+Repeat (a) for (squared) bias.
+
+**Answer: iv. Steadily decrease.** When s=0, there is no penalty term on the B_j coefficients, so the model is too simple and the bias is high. As s increases from 0, the model will be able to fit the training data better and be more flexible, so the bias will steadily decrease. 
+
+### 6.6.3.e
+Repeat (a) for the irreducible error.
+**Answer: v. Remain constant** The irreducible error is independent of the model and will remain constant as s increases from 0.
 
 ## ISL Exercise 6.6.4 (10pts)
+Suppose we estimate the regression coefficients in a linear regression
+model by minimizing
+$$
+\begin{align*}
+\sum_{i=1}^n (y_i - \beta_0 - \sum_{j=1}^p \beta_j x_{ij})^2 + \lambda \sum_{j=1}^p \beta_j^2
+\end{align*}
+$$
+
+for a particular value of $\lambda$ . For parts (a) through (e), indicate which
+of i. through v. is correct. Justify your answer.
+
+Options: 
+
+#### i. 
+Increase initially, and then eventually start decreasing in an inverted U shape.
+
+#### ii. 
+Decrease initially, and then eventually start increasing in a U shape.
+
+#### iii. 
+Steadily increase.
+
+#### iv. 
+Steadily decrease.
+
+#### v. 
+Remain constant.
+
+To minimize, we take the derivative of the equation with respect to $\lambda$ and set it equal to 0. 
+$$
+\begin{align*}
+\frac{\partial}{\partial \lambda} \sum_{i=1}^n (y_i - \beta_0 - \sum_{j=1}^p \beta_j x_{ij})^2 + \lambda \sum_{j=1}^p \beta_j^2 &= 0 \\
+\sum_{i=1}^n (y_i - \beta_0 - \sum_{j=1}^p \beta_j x_{ij})^2 + \sum_{j=1}^p \beta_j^2 &= 0 \\
+
+\end{align*}
+$$
+### 6.6.4.a 
+As we increase $\lambda$ from 0, the training RSS will:
+
+**Answer: iii. steadily increase** When $\lambda$ = 0, there is no penalty term and the model is too flexible, so the training RSS is low. As $\lambda$ increases from 0, the penalty term becomes more restrictive and the coefficients will shrink. As a result, the model will become less flexible and the training RSS will steadily increase. 
+
+### 6.6.4.b
+
+Repeat (a) for test RSS.
+
+**Answer: #### ii. Decrease initially, and then eventually start increasing in a U shape.** When $\lambda$ = 0, the test RSS is high because the model is too flexible and likely to overfit. The test RSS will decrease initially as the model becomes less flexible and the coefficients shrink. However, as $\lambda$ continues to increase, the model will become too inflexible and the test RSS will eventually start increasing in a U shape. This is because the model will be too simple and underfit, so the test RSS will increase again.
+
+### 6.6.4.c
+Repeat (a) for variance.
+
+**Answer: iv. steadily decrease** When $\lambda$ = 0, there is no penalty term and the model is too flexible, so the variance is high. As $\lambda$ increases from 0, the penalty term becomes more restrictive and the B_j coefficients will decrease. As a result, the model will become less flexible and the variance will steadily decrease. 
+
+### 6.6.4.d
+
+Repeat (a) for (squared) bias.
+**Answer: iii. steadily increase** When $\lambda$ = 0, there is no penalty term and the model is too flexible, so the bias is low. As $\lambda$ increases from 0, the penalty term becomes more restrictive and the B_j coefficients will shrink. As a result, the model will become more simple and the bias will steadily increase. (Notice bias-variance tradeoff with part c)
+
+### 6.6.4.e
+
+Repeat (a) for the irreducible error.
+**Answer: v. Remain constant** The irreducible error is independent of the model and will remain constant as $\lambda$ increases from 0.
 
 ## ISL Exercise 6.6.5 (10pts)
 
+It is well-known that ridge regression tends to give similar coefficient
+values to correlated variables, whereas the lasso may give quite different
+coefficient values to correlated variables. We will now explore
+this property in a very simple setting.
+
+Suppose that n = 2, p = 2, x11 = x12, x21 = x22. Furthermore,
+suppose that y1+y2 = 0 and x11+x21 = 0 and x12+x22 = 0, so that
+the estimate for the intercept in a least squares, ridge regression, or
+lasso model is zero: $\hat\beta_0 = 0$.
+
+### 6.6.5.a 
+Write out the ridge regression optimization problem in this setting.
+
+**Answer**
+$$
+\begin{align*}
+& \text{Recall that Ridge Regression optimization appears like:} \\
+\text{minimize } & \sum_{i=1}^n (y_i - \beta_0 - \sum_{j=1}^p \beta_j x_{ij})^2 + \lambda \sum_{j=1}^p \beta_j^2 \\
+& \text{Plug in } n  = 2, p = 2, \hat\beta_0 = 0 \\
+\text{minimize } & \sum_{i=1}^2 (y_i - 0 - \sum_{j=1}^2 \beta_j x_{ij})^2 + \lambda \sum_{j=1}^2 \beta_j^2 \\
+& i=1: (y_1 - 0 - \hat\beta_1x_{11} - \hat\beta_2x_{12})^2 \\
+& i=2: (y_2 - 0 - \hat\beta_1x_{21} - \hat\beta_2x_{22})  \\
+& \lambda (\hat\beta_1^2) + \lambda (\hat\beta_2^2) \\
+& \text{Combining and simplifying, we get:} \\
+\text{minimize } & 
+(y_1 - \hat\beta_1x_{11} - \hat\beta_2x_{12})^2 + (y_2 - \hat\beta_1x_{21} - \hat\beta_2x_{22})^2 + \lambda (\hat\beta_1^2 + \hat\beta_2^2) \\
+
+\end{align*}
+$$
+
+### 6.6.5.b
+Argue that in this setting, the ridge coefficient estimates satisfy
+ $\hat\beta_1 = \hat\beta_2$.
+ 
+$$
+\begin{align*}
+&\text{Since we were given } x_{11} = x_{12} \text{ and }  x_{21} = x_{22}, \text{} \text{we will refer to them as }
+x_1 \text{ and } x_2 \text{ respectively: }\\
+& x_{11} = x_{12} = x_1 \\
+& x_{21} = x_{22} = x_2 \\
+&\text{We can rewrite the ridge regression optimization problem as:} \\
+&\text{minimize } (y_1 - \hat\beta_1x_1 - \hat\beta_2x_1)^2 + (y_2 - \hat\beta_1x_2 - \hat\beta_2x_2)^2 + \lambda (\hat\beta_1^2 + \hat\beta_2^2) \\
+&\text{Taking the partial derivatives with respect to } \hat\beta_1 \text{and setting it equal to 0}: \\
+&\frac{\partial}{\partial \hat\beta_1} = -2x_1(y_1 - \hat\beta_1x_1 - \hat\beta_2x_1) - 2x_2(y_2 - \hat\beta_1x_2 - \hat\beta_2x_2) + 2\lambda\hat\beta_1 = 0\\
+&2x_1y_1 - 2\hat\beta_1x_1^2 - 2\hat\beta_2x_1^2 - 2x_2y_2 -2x_2y_2 + 2\hat\beta_1x_2x_2 + 2\hat\beta_2x_2x_2 + 2\lambda\hat\beta_1 = 0 \\
+&\beta_1(x_1^2 + x_2^2 ) + \hat\beta_2(x_1^2 + x_2^2) + \lambda\hat\beta_1 = x_1y_1 + x_2y_2 \\
+&\beta_1(x_1^2 + x_2^2 + \lambda) + \hat\beta_2(x_1^2 + x_2^2)  = x_1y_1 + x_2y_2 \\
+&\text{solving for } \hat\beta_1 \\
+&\hat\beta_1(x_1^2 + x_2^2 + \lambda) = x_1y_1 + x_2y_2 - \hat\beta_2(x_1^2 + x_2^2) \\
+
+&\hat\beta_1 = \frac{x_1y_1 + x_2y_2 - \hat\beta_2(x_1^2 + x_2^2)}{x_1^2 + x_2^2 + \lambda} \\
+
+&\text{Now taking the partial derivatives with respect to } \hat\beta_2 \text{and setting it equal to 0}: \\
+&\frac{\partial}{\partial \hat\beta_2} = -2x_1(y_1 - \hat\beta_1x_1 - \hat\beta_2x_1) - 2x_2(y_2 - \hat\beta_1x_2 - \hat\beta_2x_2) + 2\lambda\hat\beta_2 = 0\\
+&2x_1y_1 - 2\hat\beta_1x_1^2 - 2\hat\beta_2x_1^2 - 2x_2y_2 -2x_2y_2 + 2\hat\beta_1x_2x_2 + 2\hat\beta_2x_2x_2 + 2\lambda\hat\beta_2 = 0 \\
+&\beta_1(x_1^2 + x_2^2 ) + \hat\beta_2(x_1^2 + x_2^2) + \lambda\hat\beta_2 = x_1y_1 + x_2y_2 \\
+&\beta_1(x_1^2 + x_2^2) + \hat\beta_2(x_1^2 + x_2^2+ \lambda))  = x_1y_1 + x_2y_2 \\
+&\text{solving for } \hat\beta_2 \\
+&\hat\beta_2(x_1^2 + x_2^2 + \lambda) = x_1y_1 + x_2y_2 - \hat\beta_1(x_1^2 + x_2^2) \\
+&\hat\beta_2 = \frac{x_1y_1 + x_2y_2 - \hat\beta_1(x_1^2 + x_2^2)}{x_1^2 + x_2^2 + \lambda} 
+\\
+\end{align*}
+$$
+$$
+\begin{align*}
+\hat\beta_1 &= \frac{x_1y_1 + x_2y_2 - \hat\beta_2(x_1^2 + x_2^2)}{x_1^2 + x_2^2 + \lambda} 
+= 0 \\
+\hat\beta_2 &= \frac{x_1y_1 + x_2y_2 - \hat\beta_1(x_1^2 + x_2^2)}{x_1^2 + x_2^2 + \lambda} 
+= 0 \\
+&\text{Setting them equal to each other (since they both =0):}\\
+\frac{x_1y_1 + x_2y_2 - \hat\beta_2(x_1^2 + x_2^2)}{x_1^2 + x_2^2 + \lambda} &= 
+\frac{x_1y_1 + x_2y_2 - \hat\beta_1(x_1^2 + x_2^2)}{x_1^2 + x_2^2 + \lambda} \\
+x_1y_1 + x_2y_2 - \hat\beta_2(x_1^2 + x_2^2) &= x_1y_1 + x_2y_2 - \hat\beta_1(x_1^2 + x_2^2) \\
+\hat\beta_1(x_1^2 + x_2^2) &= \hat\beta_2(x_1^2 + x_2^2) \\
+\hat\beta_1 &= \hat\beta_2 \\
+&\text{Thus, we see that } \hat\beta_1 \text{ and } \hat\beta_2 \text{ are equal.} \\
+\end{align*}
+$$
+### 6.6.5.c
+
+Write out the lasso optimization problem in this setting.
+$$
+\begin{align*}
+& \text{Recall that Lasso optimization appears like:} \\
+\text{minimize } & \sum_{i=1}^n (y_i - \beta_0 - \sum_{j=1}^p \beta_j x_{ij})^2 + \lambda \sum_{j=1}^p \mid \beta_j \mid \\
+& \text{Plug in } n  = 2, p = 2, \hat\beta_0 = 0 \\
+\text{minimize } & \sum_{i=1}^2 (y_i - 0 - \sum_{j=1}^2 \beta_j x_{ij})^2 + \lambda \sum_{j=1}^2 \mid \beta_j \mid \\
+& i=1: (y_1 - 0 - \hat\beta_1x_{11} - \hat\beta_2x_{12})^2 \\
+& i=2: (y_2 - 0 - \hat\beta_1x_{21} - \hat\beta_2x_{22})  \\
+& \lambda (\mid \hat\beta_1 \mid + \mid \hat\beta_2 \mid) \\
+& \text{Combining and simplifying we get:} \\
+\text{minimize } & 
+(y_1 - \hat\beta_1x_{11} - \hat\beta_2x_{12})^2 + (y_2 - \hat\beta_1x_{21} - \hat\beta_2x_{22})^2 + \lambda (\mid \hat\beta_1 \mid + \mid \hat\beta_2 \mid) \\
+
+\end{align*}
+$$
+
+### 6.6.5.d
+Argue that in this setting, the lasso coefficients $\hat\beta_1$ and $\hat\beta_2$ 
+are not unique - in other words, there are many possible solutions
+to the optimization problem in (c). Describe these solutions.
+
+$$
+
+$$
+
 ## ISL Exercise 6.6.11 (30pts)
+We will now try to predict per capita crime rate in the Boston data
+set.
+(a) Try out some of the regression methods explored in this chapter,
+such as best subset selection, the lasso, ridge regression, and
+PCR. Present and discuss results for the approaches that you
+consider.
+```{r}
+library(MASS)
+library(leaps)
+library(glmnet)
+```
+
+
+(b) Propose a model (or set of models) that seem to perform well on
+this data set, and justify your answer. Make sure that you are
+evaluating model performance using validation set error, crossvalidation,
+or some other reasonable alternative, as opposed to
+using training error.
+(c) Does your chosen model involve all of the features in the data
+set? Why or why not?
 
 You must follow the [typical machine learning paradigm](https://ucla-biostat-212a.github.io/2024winter/slides/06-modelselection/workflow_lasso.html) to compare _at least_ 3 methods: least squares, lasso, and ridge. Report final results as
 
