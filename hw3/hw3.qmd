@@ -22,10 +22,26 @@ knitr:
     cache: false
 ---
 ```{r}
-library(ISLR2)
-library(boot) #library for bootstrapping
+#Clear Environment
+rm(list=ls())
 ```
 
+```{r}
+#LLoad Libraries
+library(ISLR2)
+library(boot) #library for bootstrapping
+library(MASS)
+library(leaps)
+library(glmnet)
+library(pls) #PCR
+
+#libraries from lecture notes
+library(GGally)
+library(ISLR2)
+library(tidyverse)
+library(tidyverse)
+library(tidymodels)
+```
 
 ## ISL Exercise 5.4.2 (10pts)
 We will now derive the probability that a given observation is part
@@ -273,7 +289,62 @@ The standard error of $\hat{\mu}_{0.1}$ using the bootstrap method is about 0.49
 Show that in the case of linear model with Gaussian errors, maximum likelihood and least squares are the same thing, and $C_p$ and AIC are equivalent.
 
 $$
+\begin{align*}
+&\text{Given a linear model with Gaussian errors } \\
+y_i &~ N(\beta x_i, \sigma^2) \\
+&\text{The probability density function of Gaussian } \\
+P(y_i) &= \frac{1}{\sqrt{2\pi\sigma^2}}e^{-\frac{(y_i - \hat{y_i})^2}{2\sigma^2}} \\
 
+&\text{the likelihood function is:} \\
+L(\beta_0 \mid x_i, y_i) &= \prod_{i=1}^n \frac{1}{\sqrt{2\pi\sigma^2}}e^{-\frac{(y_i - \hat{y_i})^2}{2\sigma^2}} \\
+
+&\text{Taking the log of the likelihood function:} \\
+log(L) &= \sum_{i=1}^n log(\frac{1}{\sqrt{2\pi\sigma^2}}e^{-\frac{(y_i - \hat{y_i})^2}{2\sigma^2}}) \\
+&= \sum_{i=1}^n log(\frac{1}{\sqrt{2\pi\sigma^2}}) + \sum_{i=1}^n log(e^{-\frac{(y_i - \hat{y_i})^2}{2\sigma^2}}) \\
+&= \sum_{i=1}^n log(\frac{1}{\sqrt{2\pi\sigma^2}}) - \sum_{i=1}^n \frac{(y_i - \hat{y_i})^2}{2\sigma^2} \\
+&= -\frac{n}{2}log(2\pi\sigma^2) - \frac{1}{2\sigma^2}\sum_{i=1}^n (y_i - \hat{y_i})^2 \\
+&= -\frac{n}{2}log(2\pi) - \frac{n}{2}log(\sigma^2) - \frac{1}{2\sigma^2}\sum_{i=1}^n (y_i - \hat{y_i})^2 \\
+&\text{Taking the derivative of the log likelihood function with respect to variance } \\ &\sigma^2 \text{ and setting it equal to 0:} \\
+&\frac{\partial}{\partial \sigma^2} log(L) = 0 \\
+\frac{\partial}{\partial \sigma^2} &(-\frac{n}{2}log(2\pi) - \frac{n}{2}log(\sigma^2) - \frac{1}{2\sigma^2}\sum_{i=1}^n (y_i - \hat{y_i})^2) = 0 \\
+\frac{\partial}{\partial \sigma^2} &(-\frac{n}{2}log(\sigma^2) - \frac{1}{2\sigma^2}\sum_{i=1}^n (y_i - \hat{y_i})^2) = 0 \\
+-\frac{n}{2\sigma^2} &+ \frac{1}{2\sigma^4}\sum_{i=1}^n (y_i - \hat{y_i})^2 = 0 \\
+\frac{n}{2\sigma^2} &= \frac{1}{2\sigma^4}\sum_{i=1}^n (y_i - \hat{y_i})^2 \\
+\frac{n}{\sigma^2} &= \frac{1}{\sigma^4}\sum_{i=1}^n (y_i - \hat{y_i})^2 \\
+n\sigma^2 &= \sum_{i=1}^n (y_i - \hat{y_i})^2 \\
+\sigma^2 &= \frac{1}{n}\sum_{i=1}^n (y_i - \hat{y_i})^2 \\
+0 &= \sum_{i=1}^n (y_i - \hat{y_i})^2 \\
+&\text{This is the same as the least squares estimate of the variance} \\
+\end{align*}
+$$
+$$
+\begin{align*}
+\\
+&\text{Now plugging this into AIC and } C_p\\
+\\
+&\text{Recall that: } \\
+AIC &= -2log(L) + 2d \\
+&\text{where L is the maximized value of the likelihood function for the estimated model.} \\
+C_p &= \frac{1}{n}(RSS + 2d\hat{\sigma}^2) \\
+&\text{where d is the total number of parameters used and } \hat{\sigma}^2 \text{ is an estimate of the error variance} \\
+\\
+&\text{Starting with AIC:} \\
+AIC &= -2log(L) + 2d \\
+&\text{Sub L with the maximized log likelihood function we obtained above:} \\
+AIC &= -2(-\frac{n}{2}log(2\pi\sigma^2) - \frac{1}{2\sigma^2}\sum_{i=1}^n (y_i - \hat{y_i})^2) + 2d \\
+&= nlog(2\pi\sigma^2) + \frac{1}{\sigma^2}\sum_{i=1}^n (y_i - \hat{y_i})^2 + 2d \\
+&\text{We know that RSS = } \sum_{i=1}^n (y_i - \hat{y_i})^2 \\
+AIC &= nlog(2\pi\sigma^2) + \frac{RSS}{\sigma^2} + 2d \\
+\\
+&\text{Recall that} \\
+C_p &= \frac{1}{n}(RSS + 2d\hat{\sigma}^2) \\
+nC_p &= RSS + 2d\hat{\sigma}^2 \\
+
+&= nlog(2\pi\sigma^2) + \frac{n}{\sigma^2}C_p \\
+&\text{Since they only differ by a constant and are a function of constants n and } \hat\sigma^2\\
+&\text{the selection of the model is not affected by using AIC or }C_p \\
+&\text{Thus , AIC and } C_p \text{ are equivalent.} \\
+\end{align*}
 $$
 
 ## ISL Exercise 6.6.1 (10pts)
@@ -430,10 +501,16 @@ $$
 
 \end{align*}
 $$
+Notes (reminders to help me understand the problem):
+- When $\lambda$ = 0,the Ridge Regression Line will be the same as the Least Squares Line because they are both minimizing the same thing - the sum of the squared residuals.
+- The large $\lambda$ gets, the smaller the slope (penalty) gets and the slope asymptotically approaches closer to 0.
+- Ridge Regression adds a little bias, but it greatly reduces the variance by shrinking parameters and making predictions less sensitive to them (reduces the weight each independent var has on the output)
+- the point of Ridge Regression is because small sample sizes can lead to poor least squares estimates that result in poor machine learning predictions (esp when num predictors > num obs)
+
 ### 6.6.4.a 
 As we increase $\lambda$ from 0, the training RSS will:
 
-**Answer: iii. steadily increase** When $\lambda$ = 0, there is no penalty term and the model is too flexible, so the training RSS is low. As $\lambda$ increases from 0, the penalty term becomes more restrictive and the coefficients will shrink. As a result, the model will become less flexible and the training RSS will steadily increase. 
+**Answer: iii. steadily increase**When $\lambda$= 0, there is no penalty term (Since $\lambda$ determines how severe the penalty is and the product of 0 * penalty is just 0), and the model is too flexible, so the training RSS is low. As $\lambda$ increases from 0, the penalty term becomes more restrictive and the coefficients will shrink. As a result, the model will become less flexible and the training RSS will steadily increase. 
 
 ### 6.6.4.b
 
@@ -444,7 +521,7 @@ Repeat (a) for test RSS.
 ### 6.6.4.c
 Repeat (a) for variance.
 
-**Answer: iv. steadily decrease** When $\lambda$ = 0, there is no penalty term and the model is too flexible, so the variance is high. As $\lambda$ increases from 0, the penalty term becomes more restrictive and the B_j coefficients will decrease. As a result, the model will become less flexible and the variance will steadily decrease. 
+**Answer: iv. steadily decrease** When $\lambda$ = 0, there is no penalty term and the model is too flexible, so the variance is high. As $\lambda$ increases from 0, the penalty term becomes more restrictive and the B_j coefficients will decrease. As a result, the model will become less flexible and the variance will steadily decrease. This is one of the benefits of Ridge Regression - it reduces the variance of the model.
 
 ### 6.6.4.d
 
@@ -521,21 +598,23 @@ x_1 \text{ and } x_2 \text{ respectively: }\\
 \\
 \end{align*}
 $$
+
 $$
 \begin{align*}
-\hat\beta_1 &= \frac{x_1y_1 + x_2y_2 - \hat\beta_2(x_1^2 + x_2^2)}{x_1^2 + x_2^2 + \lambda} 
+&\hat\beta_1 = \frac{x_1y_1 + x_2y_2 - \hat\beta_2(x_1^2 + x_2^2)}{x_1^2 + x_2^2 + \lambda} 
 = 0 \\
-\hat\beta_2 &= \frac{x_1y_1 + x_2y_2 - \hat\beta_1(x_1^2 + x_2^2)}{x_1^2 + x_2^2 + \lambda} 
+&\hat\beta_2 = \frac{x_1y_1 + x_2y_2 - \hat\beta_1(x_1^2 + x_2^2)}{x_1^2 + x_2^2 + \lambda} 
 = 0 \\
 &\text{Setting them equal to each other (since they both =0):}\\
-\frac{x_1y_1 + x_2y_2 - \hat\beta_2(x_1^2 + x_2^2)}{x_1^2 + x_2^2 + \lambda} &= 
+&\frac{x_1y_1 + x_2y_2 - \hat\beta_2(x_1^2 + x_2^2)}{x_1^2 + x_2^2 + \lambda} = 
 \frac{x_1y_1 + x_2y_2 - \hat\beta_1(x_1^2 + x_2^2)}{x_1^2 + x_2^2 + \lambda} \\
-x_1y_1 + x_2y_2 - \hat\beta_2(x_1^2 + x_2^2) &= x_1y_1 + x_2y_2 - \hat\beta_1(x_1^2 + x_2^2) \\
-\hat\beta_1(x_1^2 + x_2^2) &= \hat\beta_2(x_1^2 + x_2^2) \\
-\hat\beta_1 &= \hat\beta_2 \\
+&x_1y_1 + x_2y_2 - \hat\beta_2(x_1^2 + x_2^2) = x_1y_1 + x_2y_2 - \hat\beta_1(x_1^2 + x_2^2) \\
+&\hat\beta_1(x_1^2 + x_2^2) = \hat\beta_2(x_1^2 + x_2^2) \\
+&\hat\beta_1 = \hat\beta_2 \\
 &\text{Thus, we see that } \hat\beta_1 \text{ and } \hat\beta_2 \text{ are equal.} \\
 \end{align*}
 $$
+
 ### 6.6.5.c
 
 Write out the lasso optimization problem in this setting.
@@ -560,40 +639,319 @@ Argue that in this setting, the lasso coefficients $\hat\beta_1$ and $\hat\beta_
 are not unique - in other words, there are many possible solutions
 to the optimization problem in (c). Describe these solutions.
 
+**Answer**
+Solving for a system of equations
 $$
+\begin{align*}
+&\text{Given} \\
+x_{11} &= x_{12} \\
+x_{21} &= x_{22} \\
+x_{11} &+ x_{21} = 0 \\
+x_{12} &+ x_{22} = 0 \\
+y_1 &+ y_2 = 0 \\
+
+\text{minimize } 2(y_1 - \hat\beta_1x_{11} - \hat\beta_2x_{12})^2 &+ 2(y_2 - \hat\beta_1x_{21} - \hat\beta_2x_{22})^2 + \lambda (\mid \hat\beta_1 \mid + \mid \hat\beta_2 \mid) \\
+= \text{minimize } 2(y_1 - (\hat\beta_1 + \hat\beta_2)x_{11})^2) \\
+\text{The solution to the optimization is }
+\hat\beta_1 + \hat\beta_2 = \frac{y_1}{x_{11}}
+\end{align*}
 
 $$
 
 ## ISL Exercise 6.6.11 (30pts)
 We will now try to predict per capita crime rate in the Boston data
 set.
-(a) Try out some of the regression methods explored in this chapter,
+
+### 6.6.11.a
+Try out some of the regression methods explored in this chapter,
 such as best subset selection, the lasso, ridge regression, and
 PCR. Present and discuss results for the approaches that you
 consider.
+
 ```{r}
-library(MASS)
-library(leaps)
-library(glmnet)
+#Make a copy of Boston dataframe
+df = Boston
+head(df,5)
+
+#Check for missing values
+sum(is.na(df))
+```
+```{r}
+#Split data into training and test set
+set.seed(17)
+train = df %>% sample_frac(0.5) 
+test = df %>% setdiff(train)
+#Note: tried to split data diff (ex. 0.75) but this seemed to work better
+#when splitting 50/50, LS is higher error which shows the other models improved
+
+#Create x and y variables for training and test set
+train_x = model.matrix(crim ~ ., train)[,-1]
+test_x = model.matrix(crim ~ ., test)[,-1]
+#-1 to remove intercept
+train_y = train$crim
+test_y = test$crim
+```
+
+#### Best Subset Selection Visualize - pulled from lecture notes
+```{r}
+# Fit best subset regression
+bst_mod <- regsubsets(
+  crim ~ ., 
+  data = df, 
+  method = "exhaustive",
+  nvmax = 11
+  ) %>% summary()
+bst_mod
+
+# Display selection criteria
+bst_result <- tibble(
+  K = 1:11, 
+  R2 = bst_mod$rsq,
+  adjR2 = bst_mod$adjr2,
+  BIC = bst_mod$bic,
+  CP = bst_mod$cp
+) %>% print(width = Inf)
+
+# Visualize
+cols <- names(bst_result)
+for (j in 2:5) {
+  (bst_result %>%
+  select(K, !!sym(cols[j])) %>%
+  ggplot() + 
+    geom_line(mapping = aes(x = K, y = !!sym(cols[j]))) + 
+    labs(x = 'Model Size', y = cols[j])) %>%
+  print()
+}
+#Source:ISL6 Lecture Notes
+```
+
+#### Best Subset Selection
+```{r}
+best_sub_mod = regsubsets(train_y ~ ., data = train, nvmax = 11)
+reg_summary = summary(best_sub_mod)
+names(reg_summary)
+
+#Best Subset Model with Lowest BIC
+best_subset_bic = which.min(summary(best_sub_mod)$bic)
+best_subset_bic
+
+#Best Subset Model with Lowest ADJR2
+best_subset_adjr2 = which.min(summary(best_sub_mod)$adjr2)
+best_subset_adjr2
+```
+
+#### Ridge Regression
+```{r}
+#Set up Ridge Model
+lambda_grid <- 10^seq(10, -2, length.out = 100)
+#Cross-validation to find the best lambda
+ridge_mod = cv.glmnet(train_x, train_y, alpha = 0, lambda = lambda_grid)
+#alpha = 0 is ridge regression, default is 1 lasso
+plot(ridge_mod)
+lambda_best_ridge = ridge_mod$lambda.min
+lambda_best_ridge
+```
+
+#### Lasso Regression
+```{r}
+#Set up Lasso Model
+lasso_mod = cv.glmnet(train_x, train_y, alpha = 1)
+#alpha = 1 is lasso regression (default) 
+plot(lasso_mod)
+lambda_best_lasso = lasso_mod$lambda.min
+lambda_best_lasso
+
+```
+#### Principal Components Regression (PCR)
+```{r}
+#pls library
+pcr_mod = pcr(crim ~ ., data = train, scale = TRUE, validation = "CV")
+summary(pcr_mod)
+validationplot(pcr_mod, val.type = "MSEP")
+#We find that the lowest MSEP occurs when then number of components = 12
+```
+#### Partial Least Squares (PLS)
+```{r}
+pls_mod = plsr(crim ~ ., data = train, scale = TRUE, validation = "CV")
+summary(pls_mod)
+validationplot(pls_mod, val.type = "MSEP")
+#We find that the lowest MSEP occurs when then number of components = 9
+```
+
+#### Least Squares (LS)
+```{r}
+#Least Squares
+ls_mod = lm(crim ~ ., data = train)
+summary(ls_mod)
 ```
 
 
-(b) Propose a model (or set of models) that seem to perform well on
+### 6.6.11.b
+Propose a model (or set of models) that seem to perform well on
 this data set, and justify your answer. Make sure that you are
 evaluating model performance using validation set error, crossvalidation,
 or some other reasonable alternative, as opposed to
 using training error.
-(c) Does your chosen model involve all of the features in the data
+
+**Answer**
+```{r}
+#Test error: MSE
+#Best Subset Selection
+#Function to get predictions from the regsubset function
+predict_regsubsets = function(object, newdata, id, ...){
+  form = as.formula(object$call[[2]])
+  mat = model.matrix(form, newdata)
+  coefi = coef(object, id = id)
+  xvars = names(coefi)
+  mat[, xvars] %*% coefi
+}
+
+test_error = rep(NA, 11)
+
+for (i in 1:11){
+  pred = predict_regsubsets(best_sub_mod, test, id = i)
+  #store in array
+  test_error[i] <-(mean((pred - test_y)^2))
+}
+test_error
+
+plot(test_error, xlab = "Number of Predictors", ylab = "Test MSE", main = "Best Subset Selection Test Error", type = "b")
+```
+
+```{r}
+#TEST MSE continued
+
+#Ridge
+ridge_pred = predict(ridge_mod, s = lambda_best_ridge, newx = test_x)
+#newx should be the test set x
+ridge_test_error = mean((ridge_pred - test_y)^2)
+ridge_test_error
+
+#Lasso
+lasso_pred = predict(lasso_mod, s = lambda_best_lasso, newx = test_x)
+lasso_test_error = mean((lasso_pred - test_y)^2)
+lasso_test_error
+
+#PCR
+#since we found that the lowest MSEP occurs when then number of components = 12
+pcr_pred = predict(pcr_mod, test_x, ncomp = 12)
+mean((pcr_pred - test_y)^2)
+
+#PLS
+#since we found that the lowest MSEP occurs when then number of components = 9
+pls_pred = predict(pls_mod, test_x, ncomp = 9)
+mean((pls_pred - test_y)^2)
+
+#Least Squares
+ls_pred = predict(ls_mod, test)
+mean((ls_pred - test_y)^2)
+```
+Looking at the Test MSE for each model, we find that the Ridge Regression model has the lowest Test MSE. Therefore, the Ridge Regression model seems to perform well on this data set. The RMSE will perform similarly since it is the square root of the MSE.
+
+```{r}
+#Test RMSE (square root of MSE)
+#Least Squares
+ls_test_rmse = sqrt(mean((ls_pred - test_y)^2))
+ls_test_rmse
+
+#Ridge
+ridge_test_rmse = sqrt(mean((ridge_pred - test_y)^2))
+ridge_test_rmse
+
+#Lasso
+lasso_test_rmse = sqrt(mean((lasso_pred - test_y)^2))
+lasso_test_rmse
+
+#PCR
+pcr_test_rmse = sqrt(mean((pcr_pred - test_y)^2))
+pcr_test_rmse
+
+#PLS
+pls_test_rmse = sqrt(mean((pls_pred - test_y)^2))
+pls_test_rmse
+
+```
+
+Now using Cross Validation methods to find the best model
+```{r}
+#boot library 
+
+#CV RMSE
+#Least Squares
+
+summary(ls_mod)
+ls_cv_mod = glm(crim ~ ., data = train)
+ls_cv <- cv.glm(train,ls_cv_mod, K = 10)
+ls_cv_rmse <- sqrt(mean(ls_cv$delta^2))
+ls_cv_rmse
+
+#Ridge
+ridge_cv_pred = predict(ridge_mod, s = lambda_best_ridge, newx = train_x) 
+#newx should be train_x
+ridge_cv_rmse = sqrt(mean((ridge_cv_pred - train_y)^2))
+ridge_cv_rmse
+
+#Lasso
+lasso_cv_pred = predict(lasso_mod, s = lambda_best_lasso, newx = train_x) 
+#newx should be train_x
+lasso_cv_rmse = sqrt(mean((lasso_cv_pred - train_y)^2))
+lasso_cv_rmse
+
+#PCR
+pcr_cv_pred = predict(pcr_mod, train_x, ncomp = 12)
+pcr_cv_rmse = sqrt(mean((pcr_cv_pred - train_y)^2))
+pcr_cv_rmse
+
+#PLS
+pls_cv_pred = predict(pls_mod, train_x, ncomp = 9)
+pls_cv_rmse = sqrt(mean((pls_cv_pred - train_y)^2))
+pls_cv_rmse
+```
+My chosen model is Lasso Regression because it has the lowest Test RMSE and the second lowest Cross Validation RMSE. Therefore, the Lasso Regression model seems to perform well on this data set.
+
+### 6.6.11.c
+Does your chosen model involve all of the features in the data
 set? Why or why not?
+
+```{r}
+#Lasso Regression
+coef(lasso_mod, s = lambda_best_lasso)
+```
+
+**Answer**
+Regarding the number of features, the Lasso Regression uses all the features in the data set. though not all are considered important. Lasso involves a penalty term that can shrink coefficients to 0. As shown above, some of these coefficients are close to 0, implying that the corresponding features have little impact on the response variable. For example, age and tax have the lowest coefficients (0.013 and -0.002) do not seem to contribute much to the prediction. However, nox has a large coefficient of -9.656, suggesting that it has a significant impact on the predicted outcome. This makes it useful for feature selection, especially when dealing with high-dimensional data, as it can help to identify the most important features.
 
 You must follow the [typical machine learning paradigm](https://ucla-biostat-212a.github.io/2024winter/slides/06-modelselection/workflow_lasso.html) to compare _at least_ 3 methods: least squares, lasso, and ridge. Report final results as
 
+CODE:
+
 | Method | CV RMSE | Test RMSE |
 |:------:|:------:|:------:|:------:|
-| LS | | | |
-| Ridge | | | |
-| Lasso | | | |
-| ... | | | |
+| LS | 49.91849| 5.946654 | |
+| Ridge | 6.873875 | 5.92277 | |
+| Lasso | 6.866915 | 5.936433 | |
+| PCR | 6.863679 | 5.946654 | |
+| PLS | 6.863741 | 5.946256 | |
+
+NOTE: The values above may differ from the values that output through the code. I am not sure why the values may differ when I render the code. I have tried to set the seed to 17 (I even tried putting extra ones to each chunk and running them) to ensure that the results are reproducible. It stays consistent in the code when I rerun the chunk, but not when I render the document. Below are the values I get in my rendered output.
+
+RENDERED:
+
+| Method | CV RMSE | Test RMSE |
+|:------:|:------:|:------:|:------:|
+| LS | 52.70157| 6.111392 | |
+| Ridge | 6.764253 | 6.112843 | |
+| Lasso | 6.740723 | 6.096148 | |
+| PCR | 6.801432 | 6.188783 | |
+| PLS | 6.726659 | 6.107701 | |
+
+*NOTE:I will use the values in the RENDERED document for the final results and analysis.
+
+**Answer**
+As shown in the rendered table above, the Lasso Regression model has the lowest Test RMSE (6.096148), but Partial Least Squares has the lowest CV RMSE (6.726659). Therefore, these two models seem to perform well, but the Lasso Regression model can perform the best to unseen data.
+
+Overall, the test error is slightly lower than the cross validation error for most of the models. This suggests that the model is generalizing well to the test data. While this is a very rare phenomenon and it could be due to chance on the dataset chosen, I have tried to set the seed to different ones (1, 11, 212, etc) and the results are consistent.
+
 
 ## Bonus question (20pts)
 
@@ -601,3 +959,37 @@ Consider a linear regression, fit by least squares to a set of training data $(x
 $$
 \operatorname{E}[R_{\text{train}}(\hat{\beta})] < \operatorname{E}[R_{\text{test}}(\hat{\beta})].
 $$
+
+**Answer**
+$$
+\begin{align*}
+&\text{We know that } \hat{\beta} \text{ is the least squares estimate, so it minimizes the training error:} \\
+&\frac{1}{N} \sum_{i=1}^N (y_i - \hat{\beta}^T x_i)^2 \leq \frac{1}{N} \sum_{i=1}^N (y_i - \beta^T x_i)^2 \text{ for all } \beta \\
+&\text{Taking the expectation of both sides:} \\
+&\operatorname{E}\left[\frac{1}{N} \sum_{i=1}^N (y_i - \hat{\beta}^T x_i)^2\right] \leq \operatorname{E}\left[\frac{1}{N} \sum_{i=1}^N (y_i - \beta^T x_i)^2\right] \text{ for all } \beta \\
+\end{align*}
+$$
+$$
+\begin{align*}
+E(R_{\text{train}}(\hat{\beta})) &= \frac{1}{N} \sum_{i=1}^N \operatorname{E}[(y_i - \hat{\beta}^T x_i)^2] \\
+&= \frac{1}{N} \sum_{i=1}^N \operatorname{E}[(y_i - \hat{\beta}^T x_i)^2] \\
+&= \operatorname{E}[(y_i - \hat{\beta}^T x_i)^2] \\
+\end{align*}
+$$
+$$
+\begin{align*}
+E(R_{\text{test}}(\tilde{\beta})) &= \frac{1}{M} \sum_{i=1}^M \operatorname{E}[(y_i - \tilde{\beta}^T x_i)^2] \\
+&= \frac{1}{M} \sum_{i=1}^M \operatorname{E}[(y_i - \tilde{\beta}^T x_i)^2] \\
+&= \operatorname{E}[(y_i - \tilde{\beta}^T x_i)^2] \\
+\end{align*}
+$$
+$$
+\begin{align*}
+&\text{Since } \hat{\beta} \text{ minimizes the training error, we have:} \\
+\operatorname{E}[(y_i - \hat{\beta}^T x_i)^2] &\leq \operatorname{E}[(y_i - \tilde{\beta}^T x_i)^2] \text{ for all } \tilde{\beta} \\
+&\text{Now, we know that } \hat{\beta} \text{ minimizes the training error, so it is the best estimate for the training data.} \\
+&\text{However, the test data is drawn from the same population as the training data, so we have:} \\
+\operatorname{E}[R_{\text{train}}(\hat{\beta})] &< \operatorname{E}[R_{\text{test}}(\hat{\beta})] \text{ for all } \beta \\
+\end{align*}
+$$
+Thus, we have shown that $\operatorname{E}[R_{\text{train}}(\hat{\beta})] < \operatorname{E}[R_{\text{test}}(\hat{\beta})]$.
