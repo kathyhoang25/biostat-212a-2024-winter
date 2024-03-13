@@ -1,0 +1,806 @@
+---
+title: "Biostat 212a Homework 4"
+subtitle: "Due Mar. 12, 2024 @ 11:59PM"
+author: "Kathy Hoang and 506333118"
+date: today
+format:
+  html:
+    theme: cosmo
+    embed-resources: true
+    number-sections: true
+    toc: true
+    toc-depth: 4
+    toc-location: left
+    code-fold: false
+engine: knitr
+knitr:
+  opts_chunk: 
+    fig.align: 'center'
+    # fig.width: 6
+    # fig.height: 4
+    message: FALSE
+    cache: false
+---
+
+```{r}
+#Clear Environment
+rm(list=ls())
+```
+
+```{r}
+#load libraries
+library(GGally)
+library(gtsummary)
+library(ranger)
+library(tidyverse)
+library(tidymodels)
+library(ISLR2)
+library(yardstick)
+library(recipes)
+library(parsnip)
+library(dials)
+library(workflows)
+library(rpart.plot)
+library(vip)
+```
+
+
+## ISL Exercise 8.4.3 (10pts)
+Consider the Gini index, classification error, and entropy in a simple
+classification setting with two classes. Create a single plot that displays
+each of these quantities as a function of $\hat{p}_{m1}$. The x-axis should
+display $\hat{p}_{m1}$, ranging from 0 to 1, and the y-axis should display the
+value of the Gini index, classification error, and entropy.
+Hint: In a setting with two classes, $\hat{p}_{m1}$ = 1 − $\hat{p}_{m2}$. You could make
+this plot by hand, but it will be much easier to make in R.
+```{r}
+p <- seq(0, 1, 0.01)
+#p_(mk) represents the proportion of training observations in the mth
+#region that are from the kth class
+
+#note: gini index and entropy are defined on pg 336
+gini_G <- p * (1 - p) * 2
+#k = 2 classes
+#gini_G <- p * (1 - p) + p2 * (1 - p2) 
+entropy_D <- -p * log(p) - (1 - p) * log(1 - p)
+#note: classification error defined on pg 335
+class_error_E <- 1 - max(p, 1 - p)
+
+matplot(p, cbind(gini_G, class_error_E, entropy_D), type = "l", lty = 1, col = c("lightblue", "plum1", "lightpink"), xlab = "p_hat", ylab = "Error Metric Value")
+
+legend("topright", legend = c("Gini", "Classification Error", "Entropy"), col = c("lightblue", "plum1", "lightpink"), lty = 1, cex = 0.8)
+```
+
+## ISL Exercise 8.4.4 (10pts)
+a. Sketch the tree corresponding to the partition of the predictor
+space illustrated in the left-hand panel of Figure 8.14. The numbers
+inside the boxes indicate the mean of Y within each region.
+
+![8.4.4.a Tree Sketch](images/8.4.a_tree.jpg)
+
+b. Create a diagram similar to the left-hand panel of Figure 8.14,
+using the tree illustrated in the right-hand panel of the same
+figure. You should divide up the predictor space into the correct
+regions, and indicate the mean for each region.
+
+![8.4.4.b Tree Sketch](images/8.4.b_diagram.jpg)
+
+## ISL Exercise 8.4.5 (10pts)
+
+Suppose we produce ten bootstrapped samples from a data set
+containing red and green classes. We then apply a classification tree
+to each bootstrapped sample and, for a specific value of X, produce
+10 estimates of P(Class is Red|X):
+0:1; 0:15; 0:2; 0:2; 0:55; 0:6; 0:6; 0:65; 0:7; and 0:75:
+There are two common ways to combine these results together into a
+single class prediction. One is the majority vote approach discussed in
+this chapter. The second approach is to classify based on the average
+probability. In this example, what is the final classification under each
+of these two approaches?
+
+```{r}
+P_Class_Red <- c(0.1, 0.15, 0.2, 0.2, 0.55, 0.6, 0.6, 0.65, 0.7, 0.75)
+```
+
+### Majority Vote Approach
+```{r}
+#Majority Vote Approach
+sum(P_Class_Red >= 0.5) > sum(P_Class_Red < 0.5)
+#if it returns true, then the majority of the values are greater than 0.5 which
+#means the final classification is RED
+```
+
+### Average Probability Approach
+```{r}
+#Average Probability Approach
+mean(P_Class_Red)
+#if the mean is less than 0.5, then the final classification is GREEN
+```
+
+Under the majority vote approach, the the final classification is RED and under the average probability approach,the final classification is GREEN.
+
+## ISL Lab 8.3. `Boston` data set (30pts)
+
+Follow the machine learning workflow to train regression tree, random forest, and boosting methods for predicting `medv`. Evaluate out-of-sample performance on a test set.
+
+```{r}
+#load data
+boston_ds <- Boston
+boston_ds |> tbl_summary()
+
+#check for null
+is.na(boston_ds) |> colSums()
+
+# Split data, stratify on medv
+set.seed(212)
+boston_split <- initial_split(boston_ds, prop = 0.75, strata = medv)
+boston_train <- training(boston_split)
+boston_test <- testing(boston_split)
+```
+### Regression Tree
+```{r}
+# Create a recipe
+boston_tree <- recipe(
+  medv ~ ., 
+  data = boston_train
+) |> 
+  step_dummy(all_nominal()) |> 
+  step_naomit(medv) |> 
+  step_zv(all_numeric_predictors()) |>
+  step_normalize(all_numeric_predictors())
+# prep(training = boston_train, retain = TRUE)
+#error: Can't add a trained recipe to a workflow
+#removed the prep line
+```
+
+
+```{r}
+# Create a model specification
+regtree_mod <- decision_tree(
+  cost_complexity = tune(),
+  tree_depth = tune(),
+  min_n = 5,
+  mode = "regression",
+  engine = "rpart"
+)
+
+# Bundle the recipe and model into a workflow
+tree_wf <- workflow() %>%
+  add_recipe(boston_tree) %>%
+  add_model(regtree_mod)
+
+# Tune
+tree_grid <- grid_regular(
+  cost_complexity(),
+  tree_depth(),
+  levels = c(100, 5)
+)
+
+# Cross-validation
+set.seed(212)
+tree_vfold <- vfold_cv(boston_train, v = 5, strata = medv)
+
+# Fit the model
+tree_fit <- tree_wf %>%
+  tune_grid(
+    resamples = tree_vfold,
+    grid = tree_grid,
+    metrics = metric_set(rmse, rsq)
+  )
+# Print the results
+tree_fit
+
+```
+
+```{r}
+tree_fit %>%
+  collect_metrics() %>%
+  print(width = Inf) %>%
+  filter(.metric == "rmse") %>%
+  mutate(tree_depth = as.factor(tree_depth)) %>%
+  ggplot(mapping = aes(x = cost_complexity, y = mean, color = tree_depth)) +
+  geom_point() + 
+  geom_line() + 
+  labs(x = "cost_complexity", y = "CV mse")
+```
+```{r}
+tree_fit %>%
+  show_best("rmse")
+
+best_tree <- tree_fit %>%
+  select_best("rmse")
+best_tree
+
+# Final workflow
+final_wf <- tree_wf %>%
+  finalize_workflow(best_tree)
+final_wf
+
+# Fit the whole training set, then predict the test cases
+final_fit <- 
+  final_wf %>%
+  last_fit(boston_split)
+final_fit
+
+# Test metrics
+final_fit %>% 
+  collect_metrics()
+
+final_tree <- extract_workflow(final_fit)
+final_tree
+
+final_tree %>%
+  extract_fit_engine() %>%
+  rpart.plot(roundint = FALSE)
+
+final_tree %>% 
+  extract_fit_parsnip() %>% 
+  vip()
+```
+The final regression tree prediction model has a RMSE of 5.3 and an R-squared of 0.7. Lower RMSE and higher R-squared values are indicators of better performance for regression models. Since the RMSE is about 5.3, the model's predictions on median house price values are off by about $5,300 on average. The R-squared value is close to 1 and indicates a good model fit. With a R-squared value of 0.7, the model explains about 70% of the variance in median house price values. 
+
+The tree has a depth of 5, which means it has 5 levels of decision nodes. A deeper tree can capture more complex patterns in the data, but it can also lead to overfitting. The tree has a cost complexity of 0.01, so the model chose a simpler tree structure, and penalizes complexity to prevent overfitting and improve generalizaiton to unseen data.
+
+### Random Forest
+```{r}
+#Random Forest recipe
+boston_rf <- recipe(
+  medv ~ ., 
+  data = boston_train
+) |> 
+  #step_dummy(all_nominal()) |>  
+  # dummy not needed for random forest
+  step_naomit(medv) |> 
+  #zero variance
+  step_zv(all_numeric_predictors())
+  #step_normalize(all_numeric_predictors()) 
+  #center and scale not needed for rf
+  
+# Create a model specification
+rf_mod <- rand_forest(
+  mode = "regression",
+  mtry = tune(),
+  #trees = tune(), 
+  trees = tune()) |> 
+  #importance = TRUE) |>
+  set_engine("ranger")
+
+rf_mod
+
+# Bundle the recipe and model into a workflow
+rf_wf <- workflow() %>%
+  add_recipe(boston_rf) %>%
+  add_model(rf_mod)
+
+# Tune
+rf_grid <- grid_regular(
+  trees(range = c(100L, 300L)), 
+  mtry(range = c(1L, 5L)),
+  levels = c(3, 5)
+  )
+rf_grid
+
+# Cross-validation
+set.seed(212)
+rf_vfold <- vfold_cv(boston_train, v = 5, strata = medv)
+
+# Fit the model
+rf_fit <- rf_wf %>%
+  tune_grid(
+    resamples = rf_vfold,
+    grid = rf_grid,
+    metrics = metric_set(rmse, rsq)
+  )
+# Print the results
+rf_fit
+```
+```{r}
+rf_fit %>%
+  collect_metrics() %>%
+  print(width = Inf) %>%
+  filter(.metric == "rmse") %>%
+  mutate(mtry = as.factor(mtry)) %>%
+  ggplot(mapping = aes(x = trees, y = mean, color = mtry)) +
+  #geom_point() + 
+  geom_line() + 
+  labs(x = "Number of Trees", y = "CV mse")
+```
+
+```{r}
+rf_fit %>%
+  show_best("rmse")
+
+best_rf <- rf_fit %>%
+  select_best("rmse")
+best_rf
+
+# Final workflow
+final_wf_rf <- rf_wf %>%
+  finalize_workflow(best_rf)
+final_wf_rf
+
+# Fit the whole training set, then predict the test cases
+final_fit_rf <- 
+  final_wf_rf %>%
+  last_fit(boston_split)
+final_fit_rf
+
+# Test metrics
+final_fit_rf %>% 
+  collect_metrics()
+```
+```{r}
+final_rf <- extract_workflow(final_fit_rf)
+final_rf
+
+final_rf %>% 
+  extract_fit_parsnip()
+```
+
+The final random forest prediction model has a RMSE of about 3.64 and an R-squared of about 0.89. Lower RMSE and higher R-squared values are better. Since the RMSE is about 4.5, the model's predictions on median house price values are off by about $4,500 on average. The R-squared value is closer to 1 and indicates a great model fit. With a R-squared value of 0.89, the model explains about 89% of the variance in median house price values.
+
+### Boosting Methods
+
+```{r}
+#Boosting Methods
+
+# Create a recipe
+boston_boost <- recipe(
+  medv ~ ., 
+  data = boston_train
+) |> 
+  #step_dummy(all_nominal()) |> 
+  step_naomit(medv) |> 
+  step_zv(all_numeric_predictors())
+  #step_normalize(all_numeric_predictors())
+boston_boost
+
+# Create a model specification
+boost_mod <- boost_tree(
+    mode = "regression",
+    trees = 1000, 
+    tree_depth = tune(),
+    learn_rate = tune()
+  ) %>% 
+  set_engine("xgboost")
+boost_mod
+
+# Bundle the recipe and model into a workflow
+boost_wf <- workflow() %>%
+  add_recipe(boston_boost) %>%
+  add_model(boost_mod)
+boost_wf
+
+#Tune
+param_grid <- grid_regular(
+  tree_depth(range = c(1L, 4L)),
+  learn_rate(range = c(-3, -0.5), trans = log10_trans()),
+  levels = c(4, 10)
+  )
+param_grid
+
+#Cross-validation
+set.seed(212)
+boost_vfold <- vfold_cv(boston_train, v = 5, strata = medv)
+
+# Fit the model
+boost_fit <- boost_wf %>%
+  tune_grid(
+    resamples = boost_vfold,
+    grid = param_grid,
+    metrics = metric_set(rmse, rsq)
+  )
+# Print the results
+boost_fit
+```
+```{r}
+boost_fit %>%
+  collect_metrics() %>%
+  print(width = Inf) %>%
+  filter(.metric == "rmse") %>%
+  ggplot(mapping = aes(x = learn_rate, y = mean, color = factor(tree_depth))) +
+  geom_point() +
+  geom_line() +
+  labs(x = "Learning Rate", y = "CV AUC") +
+  scale_x_log10()
+```
+```{r}
+boost_fit %>%
+  show_best("rmse")
+
+best_boost <- boost_fit %>%
+  select_best("rmse")
+best_boost
+
+# Final workflow
+final_wf_boost <- boost_wf %>%
+  finalize_workflow(best_boost)
+final_wf_boost
+
+# Fit the whole training set, then predict the test cases
+final_fit_boost <- 
+  final_wf_boost %>%
+  last_fit(boston_split)
+final_fit_boost
+
+# Test metrics
+final_fit_boost %>% 
+  collect_metrics()
+```
+```{r}
+#library(rpart.plot)
+final_boost<- extract_workflow(final_fit_boost)
+final_boost
+
+library(vip)
+
+final_boost %>% 
+  extract_fit_parsnip() %>% 
+  vip()
+```
+The final boosting prediction model has a RMSE of about 3.12 and an R-squared of about 0.91. Lower RMSE and higher R-squared values indicate better model performance Since the RMSE is about 3.12, the model's predictions on median house price values are off by about $3,120 on average. This R-squared value is relatively closest to 1 compared to the regression tree and random forests, and indicates a better model fit. With a R-squared value of 0.91, the model explains about 91% of the variance in median house price values. which means the model fit the data better.
+
+### Evaluate out-of-sample performance on a test set 
+Note: same values computed above, but easier to compare side by side
+```{r}
+#Tree Regression
+tree_predictions <-predict(final_tree, new_data = boston_test) %>%
+  bind_cols(boston_test)
+
+# Calculate RMSE and R-squared
+tree_rmse <- sqrt(mean((tree_predictions$medv - tree_predictions$.pred)^2))
+tree_rsq <- cor(tree_predictions$medv, tree_predictions$.pred)^2
+tree_rmse
+tree_rsq
+
+#Random Forests
+rf_predictions <- predict(final_rf, new_data = boston_test) %>%
+  bind_cols(boston_test)
+
+# Calculate RMSE and R-squared
+rf_rmse <- sqrt(mean((rf_predictions$medv - rf_predictions$.pred)^2))
+rf_rsq <- cor(rf_predictions$medv, rf_predictions$.pred)^2
+rf_rmse
+rf_rsq
+
+#Boosting
+boost_predictions <- predict(final_boost, new_data = boston_test) %>%
+  bind_cols(boston_test)
+
+# Calculate RMSE and R-squared
+boost_rmse <- sqrt(mean((boost_predictions$medv - boost_predictions$.pred)^2))
+boost_rsq <- cor(boost_predictions$medv, boost_predictions$.pred)^2
+boost_rmse
+boost_rsq
+```
+The out-of-sample performance on the test set for the regression tree, random forest, and boosting models are as follows:
+- Regression Tree: RMSE = 5.26, R-squared = 0.74
+- Random Forest: RMSE = 3.64, R-squared = 0.89
+- Boosting: RMSE = 3.12, R-squared = 0.91
+
+In summary, the boosting model has the lowest RMSE and the highest R-squared value, indicating that it has the best out-of-sample performance on the test set. The random forest model has the second lowest RMSE and R-squared value, and the regression tree model has the highest RMSE and the lowest R-squared value. This suggests that the boosting model is the best model for predicting median house values in the Boston data set.
+
+## ISL Lab 8.3 `Carseats` data set (30pts)
+
+Follow the machine learning workflow to train classification tree, random forest, and boosting methods for classifying `Sales <= 8` versus `Sales > 8`. Evaluate out-of-sample performance on a test set.
+
+
+Follow the machine learning workflow to train classification tree, random forest, and boosting methods for classifying Sales <= 8 versus Sales > 8. Evaluate out-of-sample performance on a test set.
+```{r}
+#load data
+carseats_ds <- Carseats
+carseats_ds |> tbl_summary()
+
+#check for null
+is.na(boston_ds) |> colSums()
+
+# Recode Sales as a Factor
+carseats_ds$Sales <- factor(ifelse(carseats_ds$Sales > 8, "High", "Low"))
+head(carseats_ds,5)
+```
+
+```{r}
+#Split Data
+set.seed(212)
+
+carseats_split <- initial_split(
+  carseats_ds, 
+  prop = 0.75, 
+  strata = Sales)
+carseats_split
+carseats_train <- training(carseats_split)
+carseats_test <- testing(carseats_split)
+
+dim(carseats_train)
+dim(carseats_test)
+```
+### Regression Tree
+```{r}
+# Create a recipe
+carseats_tree <- recipe(
+  Sales ~ ., 
+  data = carseats_train
+) |> 
+  step_naomit(all_predictors()) |> 
+  step_dummy(all_nominal_predictors()) |> 
+  step_zv(all_numeric_predictors()) |>
+  step_normalize(all_numeric_predictors())
+# prep(training = boston_train, retain = TRUE)
+#error: Can't add a trained recipe to a workflow
+#removed the prep line
+
+carseats_tree
+
+# Create a model specification
+classtree_mod <- decision_tree(
+  cost_complexity = tune(),
+  tree_depth = tune(),
+  min_n = 5,
+  mode = "classification",
+  engine = "rpart"
+  ) 
+
+#Bundle the recipe and model into a workflow
+classtree_wf <- workflow() %>%
+  add_recipe(carseats_tree) %>%
+  add_model(classtree_mod)
+classtree_wf
+
+#Tune
+tree_grid <- grid_regular(cost_complexity(),
+                          tree_depth(),
+                          levels = c(100,5))
+
+#Cross-validation
+set.seed(212)
+
+classtree_folds <- vfold_cv(carseats_train, v = 5)
+classtree_folds
+
+#Fit C-V
+classtree_fit <- classtree_wf %>%
+  tune_grid(
+    resamples = classtree_folds,
+    grid = tree_grid,
+    metrics = metric_set(accuracy, roc_auc)
+    )
+classtree_fit
+```
+```{r}
+classtree_fit %>%
+  collect_metrics() %>%
+  print(width = Inf) %>%
+  filter(.metric == "roc_auc") %>%
+  mutate(tree_depth = as.factor(tree_depth)) %>%
+  ggplot(mapping = aes(x = cost_complexity, y = mean, color = tree_depth)) +
+  geom_point() + 
+  geom_line() + 
+  labs(x = "cost_complexity", y = "CV ROC AUC", color = "tree_depth") 
+```
+```{r}
+classtree_fit %>%
+  show_best("roc_auc")
+
+best_classtree <- classtree_fit %>%
+  select_best("roc_auc")
+best_classtree
+
+# Final workflow
+final_wf_classtree <- classtree_wf %>%
+  finalize_workflow(best_classtree)
+
+# Fit the whole training set, then predict the test cases
+final_fit_classtree <- 
+  final_wf_classtree %>%
+  last_fit(carseats_split)
+final_fit_classtree
+
+# Test metrics
+final_fit_classtree %>% 
+  collect_metrics()
+
+#Visualize the final model
+final_classtree <- extract_workflow(final_fit_classtree)
+final_classtree
+
+final_classtree %>% 
+  extract_fit_engine() %>% 
+  rpart.plot(roundint = FALSE)
+```
+The final classification tree model has a ROC AUC of approximately 0.81 and an accuracy of 0.78. Higher ROC AUC and accuracy values close to 1 indicate better model performance. The ROC AUC value of 0.81 indicates that the model has an 81% chance of distinguishing between the two classes. Accuracy measures the proportion of correctly classified observations. Thus, the model was able to correctly classify 78% of the observations.
+
+### Random Forest
+
+```{r}
+# Create a recipe
+carseats_rf <- recipe(
+  Sales ~ ., 
+  data = carseats_train
+) |> 
+  step_naomit(all_predictors()) |> 
+  #step_dummy(all_nominal_predictors()) |> 
+  step_zv(all_numeric_predictors())
+  #step_normalize(all_numeric_predictors())
+carseats_rf
+
+# Create a model specification
+classrf_mod <- rand_forest(
+  mode = "classification",
+  mtry = tune(),
+  trees = tune()
+  ) %>% 
+  set_engine("ranger")
+classrf_mod
+
+#Bundle the recipe and model into a workflow
+classrf_wf <- workflow() %>%
+  add_recipe(carseats_rf) %>%
+  add_model(classrf_mod)
+classrf_wf
+
+#Tune
+param_grid <- grid_regular(
+  trees(range = c(100L, 300L)), 
+  mtry(range = c(1L, 5L)),
+  levels = c(3, 5)
+  )
+param_grid
+
+#Cross-validation
+set.seed(212)
+
+classrf_folds <- vfold_cv(carseats_train, v = 5)
+classrf_folds
+
+#Fit C-V
+classrf_fit <- classrf_wf %>%
+  tune_grid(
+    resamples = classrf_folds,
+    grid = param_grid,
+    metrics = metric_set(accuracy, roc_auc)
+    )
+```
+```{r}
+classrf_fit %>%
+  collect_metrics() %>%
+  print(width = Inf) %>%
+  filter(.metric == "roc_auc") %>%
+  mutate(mtry = as.factor(mtry)) %>%
+  ggplot(mapping = aes(x = trees, y = mean, color = mtry)) +
+  # geom_point() + 
+  geom_line() + 
+  labs(x = "Num of Trees", y = "CV AUC")
+```
+```{r}
+classrf_fit %>%
+  show_best("roc_auc")
+
+best_classrf <- classrf_fit %>%
+  select_best("roc_auc")
+best_classrf
+
+# Final workflow
+final_wf_classrf <- classrf_wf %>%
+  finalize_workflow(best_classrf)
+
+# Fit the whole training set, then predict the test cases
+final_fit_classrf <- 
+  final_wf_classrf %>%
+  last_fit(carseats_split)
+final_fit_classrf
+
+# Test metrics
+final_fit_classrf %>% 
+  collect_metrics()
+```
+```{r}
+final_classrf <- extract_workflow(final_fit_classrf)
+final_classrf
+
+final_classrf %>% 
+  extract_fit_parsnip()
+```
+The final random forest classification model has a ROC AUC of approximately 0.89 and an accuracy of 0.81. Higher ROC AUC and accuracy values close to 1 are indicators of better model performance. The ROC AUC value of 0.89 is a good value, as it suggests that the model is separating the two classes well. The accuracy of 0.81 means that the model was able to correctly classify 81% of the observations. This is a good accuracy value, as the model is making correct presictions for the majority of the observations.
+
+### Boosting
+```{r}
+# Create a recipe
+carseats_boost <- recipe(
+  Sales ~ ., 
+  data = carseats_train
+) |> 
+  #step_naomit(all_predictors()) |> 
+  step_dummy(all_nominal_predictors()) |> 
+  step_zv(all_numeric_predictors())
+  #step_normalize(all_numeric_predictors())
+
+# Create a model specification
+classboost_mod <- boost_tree(
+    mode = "classification",
+    trees = 1000, 
+    tree_depth = tune(),
+    learn_rate = tune()
+  ) %>% 
+  set_engine("xgboost")
+classboost_mod
+
+#Bundle the recipe and model into a workflow
+classboost_wf <- workflow() %>%
+  add_recipe(carseats_boost) %>%
+  add_model(classboost_mod)
+classboost_wf
+
+#Tune
+boost_grid <- grid_regular(
+  tree_depth(range = c(1L, 3L)),
+  learn_rate(range = c(-5, 2), trans = log10_trans()),
+  levels = c(3, 10))
+boost_grid
+
+#Cross-validation
+set.seed(212)
+
+classboost_folds <- vfold_cv(carseats_train, v = 5)
+classboost_folds
+
+#Fit C-V
+classboost_fit <- classboost_wf %>%
+  tune_grid(
+    resamples = classboost_folds,
+    grid = boost_grid,
+    metrics = metric_set(accuracy, roc_auc)
+    )
+```
+```{r}
+classboost_fit %>%
+  collect_metrics() %>%
+  print(width = Inf) %>%
+  filter(.metric == "roc_auc") %>%
+  mutate(tree_depth = as.factor(tree_depth)) %>%
+  ggplot(mapping = aes(x = learn_rate, y = mean, color = tree_depth)) +
+  geom_point() +
+  geom_line() +
+  labs(x = "Learning Rate", y = "CV AUC") +
+  scale_x_log10()
+```
+
+```{r}
+classboost_fit %>%
+  show_best("roc_auc")
+
+best_classboost <- classboost_fit %>%
+  select_best("roc_auc")
+best_classboost
+
+# Final workflow
+final_wf_classboost <- classboost_wf %>%
+  finalize_workflow(best_classboost)
+final_wf_classboost
+
+# Fit the whole training set, then predict the test cases
+final_fit_classboost <- 
+  final_wf_classboost %>%
+  last_fit(carseats_split)
+
+# Test metrics
+final_fit_classboost %>% 
+  collect_metrics()
+```
+
+```{r}
+final_classboost <- extract_workflow(final_fit_classboost)
+final_classboost
+
+final_classboost %>% 
+  extract_fit_parsnip() %>% 
+  vip()
+```
+The final boosting classification model has a ROC AUC of approximately 0.91 and an accuracy of 0.82. This classification model had the highest ROC AUC and accuracy values compared to the regression tree and random forest models. The ROC AUC value of 0.91 is an excellent value, implying that the model performs very well in terms of distinguishing between the two classes. The model was able to correctly classify 82% of the observations, which is a reasonably high accuracy score and indicates high predictive power.
+
+### Evaluate out-of-sample performance on a test set
+The out-of-sample performance on the test set for the regression tree, random forest, and boosting models are as follows:
+- Regression Tree: ROC AUC = 0.81, Accuracy = 0.78
+- Random Forest: ROC AUC = 0.89, Accuracy = 0.81
+- Boosting: ROC AUC = 0.91, Accuracy = 0.82
+
+In summary, the boosting classification model has the best performance in terms of ROC AUC and accuracy, followed by the random forest classification model, and then the regression tree classification model. This suggests that the boosting model is the best model for classifying sales as high or low in the Carseats data set.
