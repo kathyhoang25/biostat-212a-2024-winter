@@ -95,7 +95,7 @@ The decision boundary is not linear in terms of $X_1$ and $X_2$ because the
 terms $X_1^2$ and $X_2^2$ make it quadratic. If it were linear, it would have 
 the form $aX_1 + bX_2 + c = 0$, where a, b, and c are constants.
 
-However, the decision boundary is linear in terms of $X_1$, $X_1^2$, $X_2$, and $X_2^2$ because they are represented in the form of a linear equation: $aX_1 + bX_1^2 + cX_2 + dX_2^2 + e = 0$, where a, b, c, d, and e are constants. 
+However, the decision boundary is linear in terms of $X_1$, $X_1^2$, $X_2$, and $X_2^2$ because they are represented in the form of a linear equation: $aX_1 + bX_1^2 + cX_2 + dX_2^2 + e = 0$, where a, b, c, d, and e are constants.
 
 ## Support vector machines (SVMs) on the `Carseats` data set (30pts)
 
