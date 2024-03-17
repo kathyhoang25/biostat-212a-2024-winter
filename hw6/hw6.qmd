@@ -1,0 +1,453 @@
+---
+title: "Biostat 212a Homework 6"
+subtitle: "Due Mar 22, 2024 @ 11:59PM"
+author: "Kathy Hoang and 506333118"
+date: today
+format:
+  html:
+    theme: cosmo
+    embed-resources: true
+    number-sections: true
+    toc: true
+    toc-depth: 4
+    toc-location: left
+    code-fold: false
+engine: knitr
+knitr:
+  opts_chunk: 
+    fig.align: 'center'
+    # fig.width: 6
+    # fig.height: 4
+    message: FALSE
+    cache: false
+---
+
+Load R libraries.
+```{r}
+library(tidyverse)
+library(tidymodels)
+library(readr)
+library(tswge)
+library(ggplot2)
+
+acfdf <- function(vec) {
+    vacf <- acf(vec, plot = F)
+    with(vacf, data.frame(lag, acf))
+}
+
+ggacf <- function(vec) {
+    ac <- acfdf(vec)
+    ggplot(data = ac, aes(x = lag, y = acf)) + geom_hline(aes(yintercept = 0)) + 
+        geom_segment(mapping = aes(xend = lag, yend = 0))
+}
+
+tplot <- function(vec) {
+    df <- data.frame(X = vec, t = seq_along(vec))
+    ggplot(data = df, aes(x = t, y = X)) + geom_line()
+}
+```
+
+## New York Stock Exchange (NYSE) data (1962-1986) (140 pts)
+
+::: {#fig-nyse}
+
+<p align="center">
+![](ISL_fig_10_14.pdf){width=600px height=600px}
+</p>
+
+Historical trading statistics from the New York Stock Exchange. Daily values of the normalized log trading volume, DJIA return, and log volatility are shown for a 24-year period from 1962-1986. We wish to predict trading volume on any day, given the history on all earlier days. To the left of the red bar (January 2, 1980) is training data, and to the right test data.
+
+:::
+
+The [`NYSE.csv`](https://raw.githubusercontent.com/ucla-econ-425t/2023winter/master/slides/data/NYSE.csv) file contains three daily time series from the New York Stock Exchange (NYSE) for the period Dec 3, 1962-Dec 31, 1986 (6,051 trading days).
+
+- `Log trading volume` ($v_t$): This is the fraction of all outstanding shares that are traded on that day, relative to a 100-day moving average of past turnover, on the log scale.
+    
+- `Dow Jones return` ($r_t$): This is the difference between the log of the Dow Jones Industrial Index on consecutive trading days.
+    
+- `Log volatility` ($z_t$): This is based on the absolute values of daily price movements.
+
+```{r}
+# Read in NYSE data from url
+
+url = "https://raw.githubusercontent.com/ucla-biostat-212a/2024winter/master/slides/data/NYSE.csv"
+NYSE <- read_csv(url)
+
+NYSE
+```
+The **autocorrelation** at lag $\ell$ is the correlation of all pairs $(v_t, v_{t-\ell})$ that are $\ell$ trading days apart. These sizable correlations give us confidence that past values will be helpful in predicting the future.
+
+```{r}
+#| code-fold: true
+#| label: fig-nyse-autocor
+#| fig-cap: "The autocorrelation function for log volume. We see that nearby values are fairly strongly correlated, with correlations above 0.2 as far as 20 days apart."
+
+ggacf(NYSE$log_volume) + ggthemes::theme_few()
+
+```
+
+Do a similar plot for (1) the correlation between $v_t$ and lag $\ell$ `Dow Jones return` $r_{t-\ell}$ and (2) correlation between $v_t$ and lag $\ell$ `Log volatility` $z_{t-\ell}$.
+
+```{r}
+seq(1, 30) %>% 
+  map(function(x) {cor(NYSE$log_volume , lag(NYSE$DJ_return, x), use = "pairwise.complete.obs")}) %>% 
+  unlist() %>% 
+  tibble(lag = 1:30, cor = .) %>% 
+  ggplot(aes(x = lag, y = cor)) + 
+  geom_hline(aes(yintercept = 0)) + 
+  geom_segment(mapping = aes(xend = lag, yend = 0)) + 
+  ggtitle("AutoCorrelation between `log volume` and lagged `DJ return`")
+```
+```{r}
+seq(1, 30) %>% 
+  map(function(x) {cor(NYSE$log_volume , lag(NYSE$log_volatility, x), use = "pairwise.complete.obs")}) %>% 
+  unlist() %>% 
+  tibble(lag = 1:30, cor = .) %>% 
+  ggplot(aes(x = lag, y = cor)) + 
+  geom_hline(aes(yintercept = 0)) + 
+  geom_segment(mapping = aes(xend = lag, yend = 0)) + 
+  ggtitle("AutoCorrelation between `log volume` and lagged `log volatility`")
+```
+
+
+
+### Project goal
+
+Our goal is to forecast daily `Log trading volume`, using various machine learning algorithms we learnt in this class. 
+
+The data set is already split into train (before Jan 1st, 1980, $n_{\text{train}} = 4,281$) and test (after Jan 1st, 1980, $n_{\text{test}} = 1,770$) sets.
+
+<!-- Include `day_of_week` as a predictor in the models. -->
+
+In general, we will tune the lag $L$ to acheive best forecasting performance. In this project, we would fix $L=5$. That is we always use the previous five trading days' data to forecast today's `log trading volume`.
+
+Pay attention to the nuance of splitting time series data for cross validation. Study and use the [`time-series`](https://www.tidymodels.org/learn/models/time-series/) functionality in tidymodels. Make sure to use the same splits when tuning different machine learning algorithms.
+
+Use the $R^2$ between forecast and actual values as the cross validation and test evaluation criterion.
+
+### Baseline method (20 pts)
+
+We use the straw man (use yesterday’s value of `log trading volume` to predict that of today) as the baseline method. Evaluate the $R^2$ of this method on the test data.
+
+```{r}
+# Baseline method
+
+NYSE |> head()
+
+# train (before Jan 1st, 1980)
+train <- NYSE |> filter(year(NYSE$date) < 1980)
+train
+
+# test (after Jan 1st, 1980)
+test <- NYSE |> filter(year(NYSE$date) >= 1980)
+test
+
+#Use lag variable to shift back by 1 day (time series)
+yday <- lag(test$log_volume,1)
+
+#Predict
+
+#Calculate R^2
+#use cor function to get R
+r_squared_baseline = cor(yday, test$log_volume, use = "pairwise.complete.obs")^2
+r_squared_baseline
+```
+
+
+### Autoregression (AR) forecaster (30 pts)
+
+- Let
+$$
+y = \begin{pmatrix} v_{L+1} \\ v_{L+2} \\ v_{L+3} \\ \vdots \\ v_T \end{pmatrix}, \quad M = \begin{pmatrix}
+1 & v_L & v_{L-1} & \cdots & v_1 \\
+1 & v_{L+1} & v_{L} & \cdots & v_2 \\
+\vdots & \vdots & \vdots & \ddots & \vdots \\
+1 & v_{T-1} & v_{T-2} & \cdots & v_{T-L}
+\end{pmatrix}.
+$$
+
+- Fit an ordinary least squares (OLS) regression of $y$ on $M$, giving
+$$
+\hat v_t = \hat \beta_0 + \hat \beta_1 v_{t-1} + \hat \beta_2 v_{t-2} + \cdots + \hat \beta_L v_{t-L},
+$$
+known as an **order-$L$ autoregression** model or **AR($L$)**.
+
+- Tune AR(5) with elastic net (lasso + ridge) regularization using all 3 features on the training data, and evaluate the test performance. 
+
+- Hint: [Workflow: Lasso](https://ucla-biostat-212a.github.io/2024winter/slides/06-modelselection/workflow_lasso.html) is a good starting point.
+
+```{r}
+
+```
+
+```{r}
+norm_recipe <- recipe(log_volume ~ ., 
+                      data = train) |>
+  #remove date because it is not a predictor
+  step_rm(date) |>
+  #create dummy variables
+  step_dummy(all_nominal()) |>
+  # zero-variance filter
+  step_zv(all_predictors()) |>
+  #need to center and scale for lasso
+  step_normalize(all_predictors())
+  #prep(training = train, retain = TRUE)
+norm_recipe
+```
+```{r}
+#LASSO MOD
+
+#Create a model specification
+lambda_grid <- c(0, 10^seq(-3, 5, length.out = 100))
+elastic_mod <- linear_reg(penalty = tune(), mixture = 0.5) |>
+  # mixture = 0 (ridge), mixture = 1 (lasso)
+  #0 < mixture < 1 specifies an elastic net model, interpolating lasso and ridge.
+  set_engine("glmnet", path_values = lambda_grid)
+elastic_mod
+
+#Bundle Workflow
+lr_wf <- 
+  workflow() |>
+  add_model(elastic_mod) |>
+  add_recipe(norm_recipe)
+lr_wf
+
+#Tune
+elastic_grid <-
+  grid_regular(penalty(range = c(-2, 3), trans = log10_trans()), levels = 100)
+elastic_grid
+
+#Cross- Validation
+set.seed(212)
+elastic_folds <- vfold_cv(train, v = 10)
+elastic_folds
+
+#Fit C-V
+elastic_fit <- 
+  lr_wf %>%
+  tune_grid(
+    resamples = elastic_folds,
+    grid = elastic_grid
+    )
+elastic_fit
+```
+
+```{r}
+#Visualize CV
+lasso_fit %>%
+  collect_metrics() %>%
+  print(width = Inf) %>%
+  filter(.metric == "rmse") %>%
+  ggplot(mapping = aes(x = penalty, y = mean)) + 
+  geom_point() + 
+  geom_line() + 
+  labs(x = "Penalty", y = "CV RMSE") + 
+  scale_x_log10(labels = scales::label_number())
+```
+
+### Random forest forecaster (30pts)
+
+- Use the same features as in AR($L$) for the random forest. Tune the random forest and evaluate the test performance.
+
+- Hint: [Workflow: Random Forest for Prediction](https://ucla-biostat-212a.github.io/2024winter/slides/08-tree/workflow_rf_reg.html) is a good starting point.
+
+### Boosting forecaster (30pts)
+
+- Use the same features as in AR($L$) for the boosting. Tune the boosting algorithm and evaluate the test performance.
+
+- Hint: [Workflow: Boosting tree for Prediction](https://ucla-biostat-212a.github.io/2024winter/slides/08-tree/workflow_boosting_reg.html) is a good starting point.
+
+
+### Summary (30pts)
+
+Your score for this question is largely determined by your final test performance.
+
+Summarize the performance of different machine learning forecasters in the following format. 
+
+| Method | CV $R^2$ | Test $R^2$ |
+|:------:|:------:|:------:|:------:|
+| Baseline | | | |
+| AR(5) | | | |
+| Random Forest | | | |
+| Boosting | | | |
+
+## ISL Exercise 12.6.13 (90 pts)
+
+On the book website, www.statlearning.com, there is a gene expression
+data set (Ch12Ex13.csv) that consists of 40 tissue samples with
+measurements on 1,000 genes. The  rst 20 samples are from healthy
+patients, while the second 20 are from a diseased group.
+
+```{r}
+#load library
+library(workflows)
+library(parsnip)
+library(tidyclust)
+library(tidyverse)
+library(tidymodels)
+library(RcppHungarian)
+```
+
+(a) Load in the data using read.csv(). You will need to select
+header = F.
+
+```{r}
+ds <- read.csv("https://raw.githubusercontent.com/ucla-biostat-212a/2024winter/master/slides/data/Ch12Ex13.csv", header = F)
+```
+
+### 12.6.13 (b) (30 pts)
+(b) Apply hierarchical clustering to the samples using correlationbased
+distance, and plot the dendrogram. Do the genes separate
+the samples into the two groups? Do your results depend on the
+type of linkage used?
+data("penguins", package = "modeldata")
+
+```{r}
+#Divide into healthy and diseased columns
+healthy <- ds[1:20,]
+diseased <- ds[21:40,]
+```
+
+```{r}
+healthy_group <- pivot_longer(healthy, cols = everything(), names_to = "gene", values_to = "healthy") 
+healthy_group
+
+diseased_group <-pivot_longer(diseased, cols = everything(), names_to = "gene", values_to = "diseased") 
+diseased_group
+
+#merge back into one
+ds_grouped <- bind_cols(healthy_group, diseased_group)
+ds_grouped
+```
+
+```{r}
+#shuffle rows
+ds_grouped <- ds_grouped |>
+  sample_n(nrow(ds_grouped))
+ds_grouped
+```
+
+```{r}
+#	Average -> Mean inter-cluster dissimilarity. Compute all pairwise dissimilarities between the observations in cluster A and the observations in cluster B, and record the AVG of these dissimilarities.
+
+hc_spec_avg <- hier_clust(
+  num_clusters = 3,
+  linkage_method = "average"
+)
+
+hc_spec_avg
+
+hc_fit_avg <- hc_spec_avg |>
+  fit(~ healthy + diseased,
+    data = ds_grouped
+  )
+
+hc_fit_avg |>
+  summary()
+
+hc_fit_avg$fit %>% plot()
+
+#Extract fit avg summary
+hc_summary_avg <- hc_fit_avg %>% extract_fit_summary()
+
+hc_summary_avg %>% str()
+
+hc_fit_avg %>% extract_centroids()
+```
+
+```{r}
+#Complete	-> Maximal inter-cluster dissimilarity. Compute all pairwise dissimilarities between the observations in cluster A and the observations in cluster B, and record the LARGEST of these dissimilarities.
+
+hc_spec_large <- hier_clust(
+  num_clusters = 3,
+  linkage_method = "complete"
+)
+
+hc_spec_large
+
+hc_fit_large <- hc_spec_large |>
+  fit(~ healthy + diseased,
+    data = ds_grouped
+  )
+
+hc_fit_large |>
+  summary()
+
+hc_fit_large$fit %>% plot()
+
+#Extract fit large summary
+hc_summary_large <- hc_fit_large %>% extract_fit_summary()
+
+hc_summary_large %>% str()
+
+hc_fit_large %>% extract_centroids()
+```
+
+```{r}
+#Single	-> Maximal inter-cluster dissimilarity. Compute all pairwise dissimilarities between the observations in cluster A and the observations in cluster B, and record the SMALLEST of these dissimilarities.
+
+hc_spec_small <- hier_clust(
+  num_clusters = 3,
+  linkage_method = "complete"
+)
+
+hc_spec_small
+
+hc_fit_small <- hc_spec_small |>
+  fit(~ healthy + diseased,
+    data = ds_grouped
+  )
+
+hc_fit_small |>
+  summary()
+
+hc_fit_small$fit %>% plot()
+
+#Extract small avg summary
+hc_summary_small <- hc_fit_small %>% extract_fit_summary()
+
+hc_summary_small %>% str()
+
+hc_fit_small %>% extract_centroids()
+```
+
+```{r}
+#Centroid	--> Dissimilarity between the centroid for cluster A (a mean vector of length) and the centroid for cluster B. Centroid linkage can result in undesirable inversions.
+
+hc_spec_centroid <- hier_clust(
+  num_clusters = 3,
+  linkage_method = "centroid"
+)
+
+hc_spec_centroid
+
+hc_fit_centroid <- hc_spec_centroid |>
+  fit(~ healthy + diseased,
+    data = ds_grouped
+  )
+
+hc_fit_centroid |>
+  summary()
+
+hc_fit_centroid$fit %>% plot()
+
+#Extract fit avg summary
+hc_summary_centroid <- hc_fit_centroid %>% extract_fit_summary()
+
+hc_summary_centroid %>% str()
+
+hc_fit_centroid %>% extract_centroids()
+```
+
+
+### PCA and UMAP (30 pts)
+
+```{r}
+
+```
+
+
+### 12.6.13 (c) (30 pts)
+(c) Your collaborator wants to know which genes di er the most
+across the two groups. Suggest a way to answer this question,
+and apply it here.
