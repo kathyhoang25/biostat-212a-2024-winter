@@ -44,9 +44,15 @@ This problem involves hyperplanes in two dimensions.
 points for which 1 + 3X1 − X2 > 0, as well as the set of points
 for which 1 + 3X1 − X2 < 0.
 
+![9.7.1.a Hyperplane](images/9.7.1.a.jpg)
+
 (b) On the same plot, sketch the hyperplane −2 + X1 + 2X2 = 0.
 Indicate the set of points for which −2 + X1 + 2X2 > 0, as well
 as the set of points for which −2 + X1 + 2X2 < 0.
+
+![9.7.1.b Hyperplane](images/9.7.1.b.jpg)
+
+
 
 ## ISL Exercise 9.7.2 (10pts)
 We have seen that in p = 2 dimensions, a linear decision boundary
@@ -56,6 +62,8 @@ We now investigate a non-linear decision boundary.
 ### a
 (a) Sketch the curve $(1 + X_1)^2 + (2 − X_2)^2 = 4:$
 
+![9.7.2.a Curve](images/9.7.2.a.jpg)
+
 ### b
 (b) On your sketch, indicate the set of points for which
 
@@ -64,6 +72,8 @@ $(1 + X_1)^2 + (2 − X_2)^2 > 4;$
 as well as the set of points for which
 $(1 + X_1)^2 + (2 − X_2)^2 $\le$ 4:$
 
+![9.7.2.b Set of Points](images/9.7.2.b.jpg)
+
 ### c
 (c) Suppose that a classifier assigns an observation to the blue class
 if
@@ -71,12 +81,21 @@ $(1 + X_1)^2 + (2 − X_2)^2 > 4;$
 and to the red class otherwise. To what class is the observation
 (0, 0) classified? (−1, 1)? (2, 2)? (3, 8)?
 
+![9.7.2.c Classifer for Observations](images/9.7.2.c.jpg)
+
 ### d
 (d) Argue that while the decision boundary in (c) is not linear in
 terms of $X_1$ and $X_2$, it is linear in terms of $X_1$, $X_1^2$, $X_2$,
 and $X_2^2$.
 
+![9.7.2.d Linear Decision Boundary](images/9.7.2.d.jpg)
+**Written Explanation** 
 
+The decision boundary is not linear in terms of $X_1$ and $X_2$ because the 
+terms $X_1^2$ and $X_2^2$ make it quadratic. If it were linear, it would have 
+the form $aX_1 + bX_2 + c = 0$, where a, b, and c are constants.
+
+However, the decision boundary is linear in terms of $X_1$, $X_1^2$, $X_2$, and $X_2^2$ because they are represented in the form of a linear equation: $aX_1 + bX_1^2 + cX_2 + dX_2^2 + e = 0$, where a, b, c, d, and e are constants. 
 
 ## Support vector machines (SVMs) on the `Carseats` data set (30pts)
 
