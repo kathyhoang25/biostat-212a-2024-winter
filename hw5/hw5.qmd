@@ -147,7 +147,8 @@ svm_carseats_recipe <- recipe(
 svm_linear_mod <- 
   svm_linear(
     mode = "classification",
-    cost = tune()
+    cost = tune(),
+    #degree = 1 #linear
   ) %>% 
   set_engine("kernlab")
 svm_linear_mod
@@ -160,7 +161,7 @@ svm_linear_wf <- workflow() %>%
 #Tune
 param_grid_linear <- grid_regular(
   cost(range = c(-2, 3)), #tune cost (C)
-  #degree = 1 bc linear
+  #degree = 1, #bc linear
   levels = c(5)
   )
 ```
@@ -399,13 +400,24 @@ svm_radial_fit %>%
 ```
 ### HW4 Comparisons
 
+**Answer**
+
+Compared to the methods used in HW4, the SVM with linear kernel, SVM with 
+polynomial kernel, and SVM with radial kernel seem to perform better overall 
+with a higher AUC. The SVM with linear kernel (degree = 1) has the highest AUC 
+above 0.96. The next highest AUC was achieved by the SVM with radial kernel,
+with an AUC score over 0.95, which was reached by the rbf_sigma parameter of 
+0.00316 (blue line). 
+
+In HW4, the Regression Tree model's highest AUC was only slightly over 0.8, and 
+the Random Forest model's highest AUC was just under 0.91. However, the Gradient Boosting had the highest AUC score of about 0.93, but was still under 0.95 so it performed worse than the SVMs above.
+
 Sources:
 
 Intuitive explanation on Tuning Cost and Gamma Parameters <https://scikit-learn.org/stable/auto_examples/svm/plot_rbf_parameters.html#sphx-glr-auto-examples-svm-plot-rbf-parameters-py>
 
 The degree parameter controls the flexibility of the decision boundary. Higher degree kernels yield a more flexible decision boundary. <https://stats.stackexchange.com/questions/348318/degree-parameter-for-svm-polynomial-kernel>
 
-```{r}
 ## Bonus (10pts)
 
 Let
@@ -413,3 +425,38 @@ $$
 f(X) = \beta_0 + \beta_1 X_1 + \cdots + \beta_p X_p = \beta_0 + \beta^T X. 
 $$
 Then $f(X)=0$ defines a hyperplane in $\mathbb{R}^p$. Show that $f(x)$ is proportional to the signed distance of a point $x$ to the hyperplane $f(X) = 0$. 
+
+$$
+\begin{aligned}
+&f(X) = \beta_0 + \beta^T X \\
+
+\\
+&\text{1.Subtract from both sides: } \beta_0 \\
+&f(X) = \beta_0 + \beta^T X \\
+&f(X) - \beta_0 = \beta^T X \\
+\\
+
+&\text{2. For any X_0 in the hyperplane f(X_0) =0} \\
+&f(X_0) -\beta_0 = \beta^T X_0 \\
+\\
+
+&\text{3. Set f(x) = 0} \\
+&0 -\beta_0 = \beta^T X_0 \\
+&-\beta_0 = \beta^T X_0 \\
+\\
+
+&\text{The signed distance of any point x from the hyperplane f(x)=0 is given 
+by} \\
+&\frac{1}{||\beta||}(\beta^Tx - \beta^Tx_0) \\
+&= \frac{1}{||\beta||}(\beta^Tx + x_0) \\
+&= \frac{1}{||\beta||}(f(x)) \\
+
+&\text{where} \\
+&||\beta|| = \sqrt{\sum_{j=1}^{p} \beta_j^2}\\
+\\
+
+&\text{Therefore, f(x) is proportional to the signed distance of a point x to 
+the hyperplane f(X) = 0.} \\
+
+\end{aligned}
+$$
