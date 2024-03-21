@@ -189,8 +189,102 @@ NYSE <- NYSE |> na.omit()
 NYSE
 ```
 
+```{r}
+# drop beginning trading days that have NA
+NYSE_test <- NYSE |>
+  filter(train == "FALSE") |>
+  select(-train) |>
+  drop_na()
+dim(NYSE_test)
+```
+```{r}
+r2_test_strawman <- rsq_vec(NYSE_test$log_volume, lag(NYSE_test$log_volume, 1)) |> round(2)
 
+r2_test_strawman
+```
 ### Autoregression (AR) forecaster (30 pts)
+
+```{r}
+#type rest later
+
+wrong_split <- initial_split()
+
+
+
+correct_split <- initial_time_split()
+
+training(correct_split) |> mutate(type = "training"), 
+(testing(correct_split) |> mutate(type = "testing")) |> 
+  ggplot(aes(x = date, y = log_volume, color = type)) + geom_line()
+```
+
+```{r}
+#GO BACK
+rolling <- rolling_origin(
+  NYSE_other |> arrange(date), initial = 30, asess = 7) |>
+  #30 days, 70 days
+  mutate(training_data = map(splits,analysis),
+         test_data = map(splits, assessment)) |>
+  select(-splits) |>
+  pivot_longer("id") |>
+  filter() |>
+  ggplot(data = )
+  })
+
+,scale = "fixed")
+)
+```
+
+### Preprocessing
+
+```{r}
+en_receipe <-
+  recipe(log_volume ~ ., data = NYSE_other) |>
+  step_dummy(all_nominal(), -all_outcomes()) |>
+  step_normalize(all_predictors(), -all_outcomes()) |>
+  step_naomit(all_predictors(), -all_outcomes()) |>
+  prep(dat = NYSE_other)
+```
+
+### Model Training
+
+```{r}
+#GO BACK
+MOD
+```
+
+```{r}
+sliding_period <- 30
+```
+
+```{r}
+en_wf <-
+  workflow() |>
+  add_recipe(en_recipe) |>
+  add_model(en_mod) |>
+  step_rm(date) #can you not remove date in the recipe??
+```
+
+```{r}
+folds <- NYSE_other |> arrange(data) |>
+  sliding_period(date, period = "month", lookback = Inf, #go back) |>
+                 
+month_folds <- NYSE_other |>
+  sliding_period(date, period = "month", lookback = Inf, skip = 4)
+```
+
+```{r}
+lambda_grid <- grid_regular(penalty(range = c(-8, 7), trans = log10_trans(), levels= 100))
+lambda_grid
+```
+
+```{r}
+en_fit <- tune_grid(en_wf, resamples = month_folds, grid = lambda_grid) |> collect_metrics()
+en_fit
+```
+
+```{r}
+```
 
 - Let
 $$
@@ -212,19 +306,6 @@ known as an **order-$L$ autoregression** model or **AR($L$)**.
 
 - Hint: [Workflow: Lasso](https://ucla-biostat-212a.github.io/2024winter/slides/06-modelselection/workflow_lasso.html) is a good starting point.
 
-```{r}
-# drop beginning trading days that have NA
-NYSE_test <- NYSE |>
-  filter(train == "FALSE") |>
-  select(-train) |>
-  drop_na()
-dim(NYSE_test)
-```
-```{r}
-r2_test_strawman <- rsq_vec(NYSE_test$log_volume, lag(NYSE_test$log_volume, 1)) |> round(2)
-
-r2_test_strawman
-```
 
 
 ```{r}
