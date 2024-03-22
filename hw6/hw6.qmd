@@ -30,7 +30,12 @@ library(readr)
 library(tswge)
 library(ggplot2)
 library(yardstick)
-
+library(tidyclust)
+library(GGally)
+library(gtsummary)
+library(ranger)
+library(ISLR2)
+library(recipes)
 
 acfdf <- function(vec) {
   vacf <- acf(vec, plot = F)
@@ -50,7 +55,14 @@ tplot <- function(vec) {
     geom_line()
 }
 ```
-
+```{r}
+# install.packages("pheatmap")
+library(pheatmap)
+# install.packages("ggplotify")
+library(ggplotify) ## to convert pheatmap to ggplot2
+# install.packages("heatmaply")
+library(heatmaply) ## for constructing interactive heatmap
+```
 ## New York Stock Exchange (NYSE) data (1962-1986) (140 pts)
 
 ::: {#fig-nyse}
@@ -171,6 +183,7 @@ yday <- lag(test$log_volume, 1)
 r_squared_baseline <- cor(yday, test$log_volume, use = "pairwise.complete.obs")^2
 r_squared_baseline
 ```
+
 ```{r}
 # PROFESSOR'S SOLUTION (this way helps set it up for later problems)
 L <- 5
@@ -190,7 +203,13 @@ NYSE
 ```
 
 ```{r}
-# drop beginning trading days that have NA
+# drop beginning trading days which lack some lagged variables
+NYSE_other <- NYSE %>% 
+  filter(train == 'TRUE') %>%
+  select(-train) %>%
+  drop_na()
+dim(NYSE_other)
+
 NYSE_test <- NYSE |>
   filter(train == "FALSE") |>
   select(-train) |>
@@ -198,97 +217,16 @@ NYSE_test <- NYSE |>
 dim(NYSE_test)
 ```
 ```{r}
-r2_test_strawman <- rsq_vec(NYSE_test$log_volume, lag(NYSE_test$log_volume, 1)) |> round(2)
-
+r2_test_strawman <- rsq_vec(NYSE_test$log_volume, 
+                             lag(NYSE_test$log_volume, 1)) |> round(2)
 r2_test_strawman
 ```
 ### Autoregression (AR) forecaster (30 pts)
 
-```{r}
-#type rest later
-
-wrong_split <- initial_split()
-
-
-
-correct_split <- initial_time_split()
-
-training(correct_split) |> mutate(type = "training"), 
-(testing(correct_split) |> mutate(type = "testing")) |> 
-  ggplot(aes(x = date, y = log_volume, color = type)) + geom_line()
-```
-
-```{r}
-#GO BACK
-rolling <- rolling_origin(
-  NYSE_other |> arrange(date), initial = 30, asess = 7) |>
-  #30 days, 70 days
-  mutate(training_data = map(splits,analysis),
-         test_data = map(splits, assessment)) |>
-  select(-splits) |>
-  pivot_longer("id") |>
-  filter() |>
-  ggplot(data = )
-  })
-
-,scale = "fixed")
-)
-```
-
-### Preprocessing
-
-```{r}
-en_receipe <-
-  recipe(log_volume ~ ., data = NYSE_other) |>
-  step_dummy(all_nominal(), -all_outcomes()) |>
-  step_normalize(all_predictors(), -all_outcomes()) |>
-  step_naomit(all_predictors(), -all_outcomes()) |>
-  prep(dat = NYSE_other)
-```
-
-### Model Training
-
-```{r}
-#GO BACK
-MOD
-```
-
-```{r}
-sliding_period <- 30
-```
-
-```{r}
-en_wf <-
-  workflow() |>
-  add_recipe(en_recipe) |>
-  add_model(en_mod) |>
-  step_rm(date) #can you not remove date in the recipe??
-```
-
-```{r}
-folds <- NYSE_other |> arrange(data) |>
-  sliding_period(date, period = "month", lookback = Inf, #go back) |>
-                 
-month_folds <- NYSE_other |>
-  sliding_period(date, period = "month", lookback = Inf, skip = 4)
-```
-
-```{r}
-lambda_grid <- grid_regular(penalty(range = c(-8, 7), trans = log10_trans(), levels= 100))
-lambda_grid
-```
-
-```{r}
-en_fit <- tune_grid(en_wf, resamples = month_folds, grid = lambda_grid) |> collect_metrics()
-en_fit
-```
-
-```{r}
-```
-
 - Let
 $$
-y = \begin{pmatrix} v_{L+1} \\ v_{L+2} \\ v_{L+3} \\ \vdots \\ v_T \end{pmatrix}, \quad M = \begin{pmatrix}
+y = \begin{pmatrix} v_{L+1} \\ v_{L+2} \\ v_{L+3} \\ \vdots \\ v_T \end{pmatrix},
+\quad M = \begin{pmatrix}
 1 & v_L & v_{L-1} & \cdots & v_1 \\
 1 & v_{L+1} & v_{L} & \cdots & v_2 \\
 \vdots & \vdots & \vdots & \ddots & \vdots \\
@@ -298,81 +236,213 @@ $$
 
 - Fit an ordinary least squares (OLS) regression of $y$ on $M$, giving
 $$
-\hat v_t = \hat \beta_0 + \hat \beta_1 v_{t-1} + \hat \beta_2 v_{t-2} + \cdots + \hat \beta_L v_{t-L},
+\hat v_t = \hat \beta_0 + \hat \beta_1 v_{t-1} + \hat \beta_2 v_{t-2} + \cdots +
+\hat \beta_L v_{t-L},
 $$
 known as an **order-$L$ autoregression** model or **AR($L$)**.
 
+-Before we start the model training, let’s talk about time series resampling. We will use the rolling_origin function in the rsample package to create a time series cross-validation plan.
+
+-When the data have a strong time component, a resampling method should support modeling to estimate seasonal and other temporal trends within the data. A technique that randomly samples values from the training set can disrupt the model’s ability to estimate these patterns.
+
+```{r}
+NYSE %>% 
+  ggplot(aes(x = date, y = log_volume)) + 
+  geom_line() + 
+  geom_smooth(method = "lm")
+```
+
+```{r}
+#type rest later
+wrong_split <- initial_split(NYSE_other)
+
+bind_rows(
+  training(wrong_split) %>% mutate(type = "train"),
+  testing(wrong_split) %>% mutate(type = "test")
+) %>% 
+  ggplot(aes(x = date, y = log_volume, color = type, group = NA)) + 
+  geom_line()
+```
+```{r}
+correct_split <- initial_time_split(NYSE_other %>% arrange(date))
+
+bind_rows(
+  training(correct_split) %>% mutate(type = "train"),
+  testing(correct_split) %>% mutate(type = "test")
+) %>% 
+  ggplot(aes(x = date, y = log_volume, color = type, group = NA)) + 
+  geom_line()
+```
+
+```{r}
+rolling_origin(NYSE_other %>% arrange(date), initial = 30, assess = 7) %>%
+#sliding_period(NYSE_other %>% arrange(date), date, period = "day", lookback =
+  #Inf, assess_stop = 1) %>% 
+  mutate(train_data = map(splits, analysis),
+         test_data = map(splits, assessment)) %>% 
+  select(-splits) %>% 
+  pivot_longer(-id) %>% 
+  filter(id %in% c("Slice0001", "Slice0002", "Slice0003")) %>% 
+  unnest(value) %>% 
+  ggplot(aes(x = date, y = log_volume, color = name, group = NA)) + 
+  geom_point() + 
+  geom_line() +
+  facet_wrap(~id, scales = "fixed")
+```
+```{r}
+sliding_period(NYSE_other %>% arrange(date), 
+               date, period = "month", lookback = Inf, assess_stop = 1) %>% 
+  mutate(train_data = map(splits, analysis),
+         test_data = map(splits, assessment)) %>% 
+  select(-splits) %>% 
+  pivot_longer(-id) %>% 
+  filter(id %in% c("Slice001", "Slice002", "Slice003")) %>% 
+  unnest(value) %>% 
+  ggplot(aes(x = date, y = log_volume, color = name, group = NA)) + 
+  geom_point() +
+  geom_line() + 
+  facet_wrap(~id, scales = "fixed")
+```
 - Tune AR(5) with elastic net (lasso + ridge) regularization using all 3 features on the training data, and evaluate the test performance. 
 
-- Hint: [Workflow: Lasso](https://ucla-biostat-212a.github.io/2024winter/slides/06-modelselection/workflow_lasso.html) is a good starting point.
-
-
+### Preprocessing
 
 ```{r}
-norm_recipe <- recipe(log_volume ~ .,
-  data = train
-) |>
-  # remove date because it is not a predictor
-  step_rm(date) |>
-  # create dummy variables
-  step_dummy(all_nominal()) |>
-  # zero-variance filter
-  step_zv(all_predictors()) |>
-  # need to center and scale for lasso
-  step_normalize(all_predictors())
-# prep(training = train, retain = TRUE)
-norm_recipe
+en_receipe <- 
+  recipe(log_volume ~ ., data = NYSE_other) %>% 
+  step_dummy(all_nominal(), -all_outcomes()) %>% 
+  step_normalize(all_numeric_predictors(), -all_outcomes()) %>%  
+  step_naomit(all_predictors()) %>%
+  prep(data = NYSE_other)
 ```
-```{r}
-# LASSO MOD
 
-# Create a model specification
-lambda_grid <- c(0, 10^seq(-3, 5, length.out = 100))
-elastic_mod <- linear_reg(penalty = tune(), mixture = 0.5) |>
+### Model Training
+
+```{r}
+### Model
+enet_mod <- 
   # mixture = 0 (ridge), mixture = 1 (lasso)
-  # 0 < mixture < 1 specifies an elastic net model, interpolating lasso and ridge.
-  set_engine("glmnet", path_values = lambda_grid)
-elastic_mod
-
-# Bundle Workflow
-lr_wf <-
-  workflow() |>
-  add_model(elastic_mod) |>
-  add_recipe(norm_recipe)
-lr_wf
-
-# Tune
-elastic_grid <-
-  grid_regular(penalty(range = c(-2, 3), trans = log10_trans()), levels = 100)
-elastic_grid
-
-# Cross- Validation
-set.seed(212)
-elastic_folds <- vfold_cv(train, v = 10)
-elastic_folds
-
-# Fit C-V
-elastic_fit <-
-  lr_wf %>%
-  tune_grid(
-    resamples = elastic_folds,
-    grid = elastic_grid
-  )
-elastic_fit
+  # mixture = (0, 1) elastic net 
+  # As an example, we set mixture = 0.5. It needs to be tuned.
+  linear_reg(penalty = tune(), mixture = 0.5) %>% 
+  set_engine("glmnet")
+enet_mod
 ```
 
 ```{r}
-# Visualize CV
-elastic_fit %>%
-  collect_metrics() %>%
-  print(width = Inf) %>%
-  filter(.metric == "rmse") %>%
-  ggplot(mapping = aes(x = penalty, y = mean)) +
-  geom_point() +
-  geom_line() +
-  labs(x = "Penalty", y = "CV RMSE") +
-  scale_x_log10(labels = scales::label_number())
+sliding_period <- 30
 ```
+
+```{r}
+en_wf <- 
+  workflow() %>%
+  add_model(enet_mod) %>%
+  add_recipe(en_receipe %>% step_rm(date) %>% step_indicate_na())
+en_wf
+```
+
+```{r}
+folds <- NYSE_other %>% arrange(date) %>%
+    sliding_period(date, period = "month", lookback = Inf, assess_stop = 1)
+  # rolling_origin(initial = 5, assess = 1)
+
+
+month_folds <- NYSE_other %>%
+  sliding_period(
+    date,
+    "month",
+    lookback = Inf,
+    skip = 4)
+```
+
+```{r}
+lambda_grid <-
+  grid_regular(penalty(range = c(-8, -7), trans = log10_trans()), levels = 3)
+lambda_grid
+```
+
+```{r}
+en_fit <- tune_grid(en_wf, resamples = month_folds, grid = lambda_grid) %>%
+     collect_metrics() 
+en_fit
+```
+
+```{r}
+#save random forest as .rds
+saveRDS(en_fit, "elastic_net_model.rds")
+```
+
+
+
+
+```{r eval=FALSE}
+# #my old solution
+# norm_recipe <- recipe(log_volume ~ .,
+#   data = train
+# ) |>
+#   # remove date because it is not a predictor
+#   step_rm(date) |>
+#   # create dummy variables
+#   step_dummy(all_nominal()) |>
+#   # zero-variance filter
+#   step_zv(all_predictors()) |>
+#   # need to center and scale for lasso
+#   step_normalize(all_predictors())
+# # prep(training = train, retain = TRUE)
+# norm_recipe
+# ```
+# ```{r}
+# # LASSO MOD
+# 
+# # Create a model specification
+# lambda_grid <- c(0, 10^seq(-3, 5, length.out = 100))
+# elastic_mod <- linear_reg(penalty = tune(), mixture = 0.5) |>
+#   # mixture = 0 (ridge), mixture = 1 (lasso)
+#   # 0 < mixture < 1 specifies an elastic net model, interpolating lasso and ridge.
+#   set_engine("glmnet", path_values = lambda_grid)
+# elastic_mod
+# 
+# # Bundle Workflow
+# lr_wf <-
+#   workflow() |>
+#   add_model(elastic_mod) |>
+#   add_recipe(norm_recipe)
+# lr_wf
+# 
+# # Tune
+# elastic_grid <-
+#   grid_regular(penalty(range = c(-2, 3), trans = log10_trans()), levels = 100)
+# elastic_grid
+# 
+# # Cross- Validation
+# set.seed(212)
+# elastic_folds <- vfold_cv(train, v = 10)
+# elastic_folds
+# 
+# # Fit C-V
+# elastic_fit <-
+#   lr_wf %>%
+#   tune_grid(
+#     resamples = elastic_folds,
+#     grid = elastic_grid
+#   )
+# elastic_fit
+```
+
+```{r eval=FALSE}
+# # Visualize CV
+# elastic_fit %>%
+#   collect_metrics() %>%
+#   print(width = Inf) %>%
+#   filter(.metric == "rmse") %>%
+#   ggplot(mapping = aes(x = penalty, y = mean)) +
+#   geom_point() +
+#   geom_line() +
+#   labs(x = "Penalty", y = "CV RMSE") +
+#   scale_x_log10(labels = scales::label_number())
+```
+
+- Hint: [Workflow: Lasso](https://ucla-biostat-212a.github.io/2024winter/slides/06-modelselection/workflow_lasso.html) is a good starting point.
 
 ### Random forest forecaster (30pts)
 
@@ -380,12 +450,179 @@ elastic_fit %>%
 
 - Hint: [Workflow: Random Forest for Prediction](https://ucla-biostat-212a.github.io/2024winter/slides/08-tree/workflow_rf_reg.html) is a good starting point.
 
+
+```{r}
+rf_recipe <- 
+  recipe(log_volume ~ ., data = NYSE_other) %>% 
+  #step_dummy(all_nominal(), -all_outcomes()) %>% 
+  #step_normalize(all_numeric_predictors(), -all_outcomes()) %>%  
+  step_naomit(log_volume) %>%
+  step_zv(all_numeric_predictors()) %>% 
+  prep(data = NYSE_other)
+```
+
+```{r}
+rf_mod <- 
+  rand_forest(
+    mode = "regression",
+    # Number of predictors randomly sampled in each split
+    mtry = tune(),
+    # Number of trees in ensemble
+    trees = tune()
+  ) %>% 
+  set_engine("ranger")
+rf_mod
+```
+```{r}
+rf_wf <- workflow() %>%
+  add_recipe(rf_recipe %>% step_rm(date) %>% step_indicate_na()) %>%
+  add_model(rf_mod)
+rf_wf
+
+param_grid <- grid_regular(
+  trees(range = c(100L, 300L)), 
+  mtry(range = c(1L, 5L)),
+  levels = c(3, 5)
+  )
+param_grid
+
+set.seed(203)
+folds <- vfold_cv(NYSE_other, v = 5)
+folds
+
+sliding_period <- 30
+
+folds <- NYSE_other %>% arrange(date) %>%
+    sliding_period(date, period = "month", lookback = Inf, assess_stop = 1)
+  # rolling_origin(initial = 5, assess = 1)
+
+
+month_folds <- NYSE_other %>%
+  sliding_period(
+    date,
+    "month",
+    lookback = Inf,
+    skip = 4)
+
+rf_fit <- rf_wf %>%
+  tune_grid(
+    resamples = folds,
+    grid = param_grid,
+    metrics = metric_set(rmse, rsq)
+    )
+rf_fit
+```
+
+```{r}
+rf_fit %>%
+  collect_metrics() %>%
+  print(width = Inf) %>%
+  filter(.metric == "rmse") %>%
+  mutate(mtry = as.factor(mtry)) %>%
+  ggplot(mapping = aes(x = trees, y = mean, color = mtry)) +
+  # geom_point() + 
+  geom_line() + 
+  labs(x = "Num. of Trees", y = "CV mse")
+```
+
+```{r}
+rf_fit %>%
+  show_best(metric = "rmse")
+
+best_rf_rmse <- rf_fit %>%
+  select_best(metric = "rmse")
+best_rf_rmse
+
+# Final workflow
+final_wf <- rf_wf %>%
+  finalize_workflow(best_rf_rmse)
+final_wf
+```
+```{r}
+#save random forest as .rds
+saveRDS(rf_fit, "random_forest_model.rds")
+```
+
 ### Boosting forecaster (30pts)
 
 - Use the same features as in AR($L$) for the boosting. Tune the boosting algorithm and evaluate the test performance.
 
 - Hint: [Workflow: Boosting tree for Prediction](https://ucla-biostat-212a.github.io/2024winter/slides/08-tree/workflow_boosting_reg.html) is a good starting point.
 
+```{r}
+gb_recipe <- 
+  recipe(
+    log_volume ~ ., 
+    data = NYSE_other
+  ) %>%
+  # # create traditional dummy variables (not necessary for random forest in R)
+  # step_dummy(all_nominal()) %>%
+  step_naomit(log_volume) %>%
+  # zero-variance filter
+  step_zv(all_numeric_predictors())
+  # # center and scale numeric data (not necessary for random forest)
+  # step_normalize(all_numeric_predictors()) %>%
+  # estimate the means and standard deviations
+gb_recipe
+```
+
+```{r}
+gb_mod <- 
+  boost_tree(
+    mode = "regression",
+    trees = 1000, 
+    tree_depth = tune(),
+    learn_rate = tune()
+  ) %>% 
+  set_engine("xgboost")
+gb_mod
+```
+
+```{r}
+gb_wf <- workflow() %>%
+  add_recipe(gb_recipe %>% step_rm(date) %>% step_rm(day_of_week) %>%
+               step_indicate_na()) %>%
+  add_model(gb_mod)
+gb_wf
+
+param_grid <- grid_regular(
+  tree_depth(range = c(1L, 4L)),
+  learn_rate(range = c(-3, -0.5), trans = log10_trans()),
+  levels = c(4, 10)
+  )
+param_grid
+
+set.seed(203)
+folds <- vfold_cv(NYSE_other, v = 5)
+folds
+```
+
+```{r}
+gb_fit <- gb_wf %>%
+  tune_grid(
+    resamples = folds,
+    grid = param_grid,
+    metrics = metric_set(rmse, rsq)
+    )
+gb_fit
+```
+
+```{r}
+gb_fit %>%
+  collect_metrics() %>%
+  print(width = Inf) %>%
+  filter(.metric == "rmse") %>%
+  ggplot(mapping = aes(x = learn_rate, y = mean, color = factor(tree_depth))) +
+  geom_point() +
+  geom_line() +
+  labs(x = "Learning Rate", y = "CV AUC") +
+  scale_x_log10()
+```
+
+```{r}
+#save random forest as .rds
+saveRDS(gb_fit, "gradient_boosting_model.rds")
+```
 
 ### Summary (30pts)
 
@@ -424,6 +661,9 @@ header = F.
 
 ```{r}
 ds <- read.csv("https://raw.githubusercontent.com/ucla-biostat-212a/2024winter/master/slides/data/Ch12Ex13.csv", header = F)
+
+#ds <- read_csv("../../slides/data/Ch12Ex13.csv", col_names = paste("ID", 1:40, sep = ""))
+
 ```
 
 ### 12.6.13 (b) (30 pts)
@@ -431,143 +671,411 @@ ds <- read.csv("https://raw.githubusercontent.com/ucla-biostat-212a/2024winter/m
 distance, and plot the dendrogram. Do the genes separate
 the samples into the two groups? Do your results depend on the
 type of linkage used?
-data("penguins", package = "modeldata")
 
-```{r}
-# Divide into healthy and diseased columns
-healthy <- ds[1:20, ]
-diseased <- ds[21:40, ]
+Yes the gene mostly separates the samples into two groups, but it does depend on the
+type of linkage used as the average linkage has three groups. The rest of the
+linkage methods produce two groups, though they are all separated different.
+
+#### Correlation-Based Distance dendrograms
+```{r average}
+
+corr_dist <- cor(ds)
+corr_based_dist <- as.dist(1-corr_dist)
+
+
+avg <- hclust(
+  # num_clusters = 3,
+  corr_based_dist,
+  method = "average"
+)
+
+plot(avg)
+
+comp <- hclust(
+  # num_clusters = 3,
+  corr_based_dist,
+  method = "complete"
+)
+
+plot(comp)
+
+sing <- hclust(
+  # num_clusters = 3,
+  corr_based_dist,
+  method = "single"
+)
+
+plot(sing)
+
+cent <- hclust(
+  # num_clusters = 3,
+  corr_based_dist,
+  method = "centroid"
+)
+
+plot(cent)
 ```
-
+#### Average
 ```{r}
-healthy_group <- pivot_longer(healthy, cols = everything(), names_to = "gene", values_to = "healthy")
-healthy_group
+set.seed(838383)
 
-diseased_group <- pivot_longer(diseased, cols = everything(), names_to = "gene", values_to = "diseased")
-diseased_group
-
-# merge back into one
-ds_grouped <- bind_cols(healthy_group, diseased_group)
-ds_grouped
-```
-
-```{r}
-# shuffle rows
-ds_grouped <- ds_grouped |>
-  sample_n(nrow(ds_grouped))
-ds_grouped
-```
-
-```{r}
 # 	Average -> Mean inter-cluster dissimilarity. Compute all pairwise dissimilarities between the observations in cluster A and the observations in cluster B, and record the AVG of these dissimilarities.
 
-hc_spec_avg <- hier_clust(
-  num_clusters = 3,
+
+hc_spec <- hier_clust(
+  # num_clusters = 3,
   linkage_method = "average"
 )
 
-hc_spec_avg
 
-hc_fit_avg <- hc_spec_avg |>
-  fit(~ healthy + diseased,
-    data = ds_grouped
+hc_fit <- hc_spec %>%
+  fit(~ .,
+    data = as.data.frame(t(ds)) 
   )
 
-hc_fit_avg |>
+hc_fit %>%
   summary()
 
-hc_fit_avg$fit %>% plot()
+hc_fit$fit %>% plot()
+```
 
-# Extract fit avg summary
-hc_summary_avg <- hc_fit_avg %>% extract_fit_summary()
+```{r }
+grp = factor(rep(c(1, 0), each = 20))
 
-hc_summary_avg %>% str()
+regression <- function(y) {
+  sum <- summary(lm(y ~ grp))
+  pv <- sum$coefficients[2, 4]
+  return(pv)
+}
 
-hc_fit_avg %>% extract_centroids()
+
+out <- tibble(gene = seq(1, nrow(ds)),
+              p_values = unlist(purrr:: map(1:nrow(ds), 
+                                            ~regression(as.matrix(ds)[.x, ]))))
+
+out %>% arrange(p_values) %>% head(10)
+```
+```{r}
+sig <- out %>% arrange(p_values) %>% filter(p_values < 0.05 )
 ```
 
 ```{r}
-# Complete	-> Maximal inter-cluster dissimilarity. Compute all pairwise dissimilarities between the observations in cluster A and the observations in cluster B, and record the LARGEST of these dissimilarities.
+#create data frame for annotations
+dfh <- data.frame(sample=as.character(colnames(ds)), status = "disease") %>%
+                column_to_rownames("sample")
+dfh$status[seq(21, 40)] <-  "healthy"
+dfh
+```
+```{r}
+pheatmap(ds[sig$gene, ], cluster_rows = FALSE, cluster_cols = T, 
+         scale="row", annotation_col = dfh,
+         annotation_colors=list(
+           status = c(disease = "orange", healthy = "black")),
+         color=colorRampPalette(c("navy", "white", "red"))(50))
+```
 
-hc_spec_large <- hier_clust(
-  num_clusters = 3,
+#### Complete
+```{r Complete}
+set.seed(838383)
+
+# #Complete	-> Maximal inter-cluster dissimilarity. Compute all pairwise dissimilarities between the observations in cluster A and the observations in cluster B, and record the LARGEST of these dissimilarities.
+hc_spec <- hier_clust(
+  # num_clusters = 3,
   linkage_method = "complete"
 )
 
-hc_spec_large
-
-hc_fit_large <- hc_spec_large |>
-  fit(~ healthy + diseased,
-    data = ds_grouped
+hc_fit <- hc_spec %>%
+  fit(~ .,
+    data = as.data.frame(t(ds)) 
   )
 
-hc_fit_large |>
+hc_fit %>%
   summary()
 
-hc_fit_large$fit %>% plot()
+hc_fit$fit %>% plot()
+```
+```{r }
+grp = factor(rep(c(1, 0), each = 20))
 
-# Extract fit large summary
-hc_summary_large <- hc_fit_large %>% extract_fit_summary()
+regression <- function(y) {
+  sum <- summary(lm(y ~ grp))
+  pv <- sum$coefficients[2, 4]
+  return(pv)
+}
 
-hc_summary_large %>% str()
 
-hc_fit_large %>% extract_centroids()
+out <- tibble(gene = seq(1, nrow(ds)),
+              p_values = unlist(purrr:: map(1:nrow(ds), 
+                                            ~regression(as.matrix(ds)[.x, ]))))
+
+out %>% arrange(p_values) %>% head(10)
+```
+```{r}
+sig <- out %>% arrange(p_values) %>% filter(p_values < 0.05)
 ```
 
 ```{r}
+#create data frame for annotations
+dfh <- data.frame(sample=as.character(colnames(ds)), status = "disease") %>%
+                column_to_rownames("sample")
+dfh$status[seq(21, 40)] <-  "healthy"
+dfh
+```
+```{r}
+pheatmap(ds[sig$gene, ], cluster_rows = FALSE, cluster_cols = T, 
+         scale="row", annotation_col = dfh,
+         annotation_colors=list(
+           status = c(disease = "lightblue1", healthy = "darkseagreen4")),
+         color=colorRampPalette(c("darkslategray3", "white", "darkseagreen2"))(50))
+```
+#### 
+```{r }
+set.seed(838383)
+
 # Single	-> Maximal inter-cluster dissimilarity. Compute all pairwise dissimilarities between the observations in cluster A and the observations in cluster B, and record the SMALLEST of these dissimilarities.
-
-hc_spec_small <- hier_clust(
-  num_clusters = 3,
-  linkage_method = "complete"
+hc_spec <- hier_clust(
+  # num_clusters = 3,
+  linkage_method = "single"
 )
 
-hc_spec_small
 
-hc_fit_small <- hc_spec_small |>
-  fit(~ healthy + diseased,
-    data = ds_grouped
+hc_fit <- hc_spec %>%
+  fit(~ .,
+    data = as.data.frame(t(ds)) 
   )
 
-hc_fit_small |>
+hc_fit %>%
   summary()
 
-hc_fit_small$fit %>% plot()
+hc_fit$fit %>% plot()
+```
+```{r }
+grp = factor(rep(c(1, 0), each = 20))
 
-# Extract small avg summary
-hc_summary_small <- hc_fit_small %>% extract_fit_summary()
+regression <- function(y) {
+  sum <- summary(lm(y ~ grp))
+  pv <- sum$coefficients[2, 4]
+  return(pv)
+}
 
-hc_summary_small %>% str()
 
-hc_fit_small %>% extract_centroids()
+out <- tibble(gene = seq(1, nrow(ds)),
+              p_values = unlist(purrr:: map(1:nrow(ds), 
+                                            ~regression(as.matrix(ds)[.x, ]))))
+
+out %>% arrange(p_values) %>% head(10)
+```
+
+```{r}
+sig <- out %>% arrange(p_values) %>% filter(p_values < 0.05)
+```
+
+```{r}
+#create data frame for annotations
+dfh <- data.frame(sample=as.character(colnames(ds)), status = "disease") %>%
+                column_to_rownames("sample")
+dfh$status[seq(21, 40)] <-  "healthy"
+dfh
+```
+```{r}
+pheatmap(ds[sig$gene, ], cluster_rows = FALSE, cluster_cols = T, 
+         scale="row", annotation_col = dfh,
+         annotation_colors=list(
+           status = c(disease = "thistle1", healthy = "palevioletred3")),
+         color=colorRampPalette(c("mediumorchid4", "white", "lightpink2"))(50))
+```
+```{r centroid}
+set.seed(838383)
+
+# Centroid	--> Dissimilarity between the centroid for cluster A (a mean vector of length) and the centroid for cluster B. Centroid linkage can result in undesirable inversions.
+hc_spec <- hier_clust(
+  # num_clusters = 3,
+  linkage_method = "centroid"
+)
+
+
+hc_fit <- hc_spec %>%
+  fit(~ .,
+    data = as.data.frame(t(ds)) 
+  )
+
+hc_fit %>%
+  summary()
+
+hc_fit$fit %>% plot()
+```
+```{r }
+grp = factor(rep(c(1, 0), each = 20))
+
+regression <- function(y) {
+  sum <- summary(lm(y ~ grp))
+  pv <- sum$coefficients[2, 4]
+  return(pv)
+}
+
+
+out <- tibble(gene = seq(1, nrow(ds)),
+              p_values = unlist(purrr:: map(1:nrow(ds), 
+                                            ~regression(as.matrix(ds)[.x, ]))))
+
+out %>% arrange(p_values) %>% head(10)
+```
+```{r}
+sig <- out %>% arrange(p_values) %>% filter(p_values < 0.05)
+```
+
+```{r}
+#create data frame for annotations
+dfh <- data.frame(sample=as.character(colnames(ds)), status = "disease") %>%
+                column_to_rownames("sample")
+dfh$status[seq(21, 40)] <-  "healthy"
+dfh
+```
+
+```{r}
+pheatmap(ds[sig$gene, ], cluster_rows = FALSE, cluster_cols = T, 
+         scale="row", annotation_col = dfh,
+         annotation_colors=list(
+           status = c(disease = "gold", healthy = "lightsalmon4")),
+         color=colorRampPalette(c("lightsalmon1", "white", "peachpuff1"))(50))
+```
+
+```{r eval=FALSE}
+#MY OLD SOLUTION
+# Divide into healthy and diseased columns
+# healthy <- ds[1:20, ]
+# diseased <- ds[21:40, ]
+```
+
+```{r eval=FALSE}
+# healthy_group <- pivot_longer(healthy, cols = everything(), names_to = "gene", values_to = "healthy")
+# healthy_group
+# 
+# diseased_group <- pivot_longer(diseased, cols = everything(), names_to = "gene", values_to = "diseased")
+# diseased_group
+# 
+# # merge back into one
+# ds_grouped <- bind_cols(healthy_group, diseased_group)
+# ds_grouped
+```
+
+```{r eval=FALSE}
+# shuffle rows
+# ds_grouped <- ds_grouped |>
+#   sample_n(nrow(ds_grouped))
+# ds_grouped
+```
+
+```{r eval=FALSE}
+# 	Average -> Mean inter-cluster dissimilarity. Compute all pairwise dissimilarities between the observations in cluster A and the observations in cluster B, and record the AVG of these dissimilarities.
+
+# hc_spec_avg <- hier_clust(
+#   num_clusters = 3,
+#   linkage_method = "average"
+# )
+# 
+# hc_spec_avg
+# 
+# hc_fit_avg <- hc_spec_avg |>
+#   fit(~ healthy + diseased,
+#     data = ds_grouped
+#   )
+# 
+# hc_fit_avg |>
+#   summary()
+# 
+# hc_fit_avg$fit %>% plot()
+# 
+# # Extract fit avg summary
+# hc_summary_avg <- hc_fit_avg %>% extract_fit_summary()
+# 
+# hc_summary_avg %>% str()
+# 
+# hc_fit_avg %>% extract_centroids()
+```
+
+```{r eval=FALSE}
+# Complete	-> Maximal inter-cluster dissimilarity. Compute all pairwise dissimilarities between the observations in cluster A and the observations in cluster B, and record the LARGEST of these dissimilarities.
+# 
+# hc_spec_large <- hier_clust(
+#   num_clusters = 3,
+#   linkage_method = "complete"
+# )
+# 
+# hc_spec_large
+# 
+# hc_fit_large <- hc_spec_large |>
+#   fit(~ healthy + diseased,
+#     data = ds_grouped
+#   )
+# 
+# hc_fit_large |>
+#   summary()
+# 
+# hc_fit_large$fit %>% plot()
+# 
+# # Extract fit large summary
+# hc_summary_large <- hc_fit_large %>% extract_fit_summary()
+# 
+# hc_summary_large %>% str()
+# 
+# hc_fit_large %>% extract_centroids()
+```
+
+```{r eval=FALSE}
+# Single	-> Maximal inter-cluster dissimilarity. Compute all pairwise dissimilarities between the observations in cluster A and the observations in cluster B, and record the SMALLEST of these dissimilarities.
+# 
+# hc_spec_small <- hier_clust(
+#   num_clusters = 3,
+#   linkage_method = "single"
+# )
+# 
+# hc_spec_small
+# 
+# hc_fit_small <- hc_spec_small |>
+#   fit(~ healthy + diseased,
+#     data = ds_grouped
+#   )
+# 
+# hc_fit_small |>
+#   summary()
+# 
+# hc_fit_small$fit %>% plot()
+# 
+# # Extract small avg summary
+# hc_summary_small <- hc_fit_small %>% extract_fit_summary()
+# 
+# hc_summary_small %>% str()
+# 
+# hc_fit_small %>% extract_centroids()
 ```
 
 ```{r}
 # Centroid	--> Dissimilarity between the centroid for cluster A (a mean vector of length) and the centroid for cluster B. Centroid linkage can result in undesirable inversions.
-
-hc_spec_centroid <- hier_clust(
-  num_clusters = 3,
-  linkage_method = "centroid"
-)
-
-hc_spec_centroid
-
-hc_fit_centroid <- hc_spec_centroid |>
-  fit(~ healthy + diseased,
-    data = ds_grouped
-  )
-
-hc_fit_centroid |>
-  summary()
-
-hc_fit_centroid$fit %>% plot()
-
-# Extract fit avg summary
-hc_summary_centroid <- hc_fit_centroid %>% extract_fit_summary()
-
-hc_summary_centroid %>% str()
-
-hc_fit_centroid %>% extract_centroids()
+# 
+# hc_spec_centroid <- hier_clust(
+#   num_clusters = 3,
+#   linkage_method = "centroid"
+# )
+# 
+# hc_spec_centroid
+# 
+# hc_fit_centroid <- hc_spec_centroid |>
+#   fit(~ healthy + diseased,
+#     data = ds_grouped
+#   )
+# 
+# hc_fit_centroid |>
+#   summary()
+# 
+# hc_fit_centroid$fit %>% plot()
+# 
+# # Extract fit avg summary
+# hc_summary_centroid <- hc_fit_centroid %>% extract_fit_summary()
+# 
+# hc_summary_centroid %>% str()
+# 
+# hc_fit_centroid %>% extract_centroids()
 ```
 
 
@@ -578,6 +1086,12 @@ hc_fit_centroid %>% extract_centroids()
 
 
 ### 12.6.13 (c) (30 pts)
-(c) Your collaborator wants to know which genes di er the most
+(c) Your collaborator wants to know which genes differ the most
 across the two groups. Suggest a way to answer this question,
 and apply it here.
+
+```{r}
+set.seed(838383)
+#pca <- pr.comp(ds) #uses SVD
+```
+
